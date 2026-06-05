@@ -76,7 +76,10 @@ payment_method, rappi_score, cancellation_rate
 
 ### Maximum amount formula
 ```
-Monto_Maximo = V_neto_mensual * (1.2 - CV) * (1 - R_cancelaciones) * M_canal * T
+Monto_Maximo = min(
+    V_neto_mensual * (1.2 - CV) * (1 - R_cancelaciones) * M_canal * T,
+    V_neto_mensual * 1.0  # business cap: max 1x monthly sales
+)
 ```
 
 ### CV interpretation to show the user
@@ -92,8 +95,8 @@ Monto_Maximo = V_neto_mensual * (1.2 - CV) * (1 - R_cancelaciones) * M_canal * T
 
 ## MVP financial parameters
 - Loan amount range: 800,000 to 2,500,000 ARS
-- Factor Rate: 1.18 fixed (merchant repays principal * 1.18 regardless of term)
-- Daily retention: slider between 8% and 18% of sales (default 12%)
+- Factor Rate: 1.18 fixed for MVP (range 1.15–1.35 by risk tier at scale; merchant repays principal * 1.18 regardless of term)
+- Daily retention: slider between 10% and 15% of sales (default 12%)
 - Target term: 90 days
 
 ## Repayment simulator
@@ -131,6 +134,9 @@ Process everything in a single API call per explanation to minimize cost.
 - Type hints on public functions
 - Error handling: try/except with clear user-facing messages
 - If the Anthropic API returns malformed JSON, parse with regex + fallback
+
+## Verification
+Before starting any task, briefly state how you will verify the output is correct.
 
 ## Commands
 - Run: `streamlit run app.py`
