@@ -1,95 +1,113 @@
 # === clustering.py ===
-"""Clustering de tipos de usuario para Vertical 1: Biblioteca de suscripción.
+"""Clustering module for Vertical 1: Biblioteca de suscripción.
 
-Entrena un KMeans sobre los features comportamentales del lector y asigna
-la etiqueta ``user_type`` (lector_voraz, lector_fiel, etc.) a cada usuario.
-
-Diseño:
-  - KMeans con n_clusters = config.KMEANS_N_CLUSTERS (default 5).
-  - Features normalizados con StandardScaler (persistido junto al modelo).
-  - El mapa cluster_id → user_type vive en data/services/biblioteca.json.
-  - Confianza = 1 / (1 + distancia_al_centroide) ∈ (0, 1].
+Assigns user type labels (lector_voraz, lector_fiel, etc.) based on behavioral features
+using KMeans clustering. Features are normalized and cluster → label mapping is
+configurable via data/services/biblioteca.json.
 
 Uso:
-    python clustering.py --train
-    python clustering.py --predict-demo
+    python clustering.py --train              # Train on default dataset
+    python clustering.py --predict-demo       # Test predict() on a sample user
+
+    from clustering import train, predict
+    train(df)
+    result = predict({"libros_leidos_total": 15, ...})
 """
 from __future__ import annotations
 
 import argparse
 import json
 import pickle
-from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 import config
 
-
-# ---------------------------------------------------------------------------
-# Feature list (must match behavioral_features in biblioteca.json)
-# ---------------------------------------------------------------------------
-
-BEHAVIORAL_FEATURES: list[str] = [
+# Behavioral features for clustering (exact order for reproducibility)
+BEHAVIORAL_FEATURES = [
     "libros_leidos_total",
     "libros_leidos_ultimos_3_meses",
     "rating_promedio_dado",
-    "frecuencia_apertura_app_num",  # daily=3, weekly=2, monthly=1
+    "frecuencia_apertura_app_num",
     "ultimo_acceso_dias",
     "lista_deseos_activa",
     "resenas_escritas",
-    "tenure_meses",
-    "prior_recoveries",
 ]
 
-_FRECUENCIA_MAP: dict[str, int] = {"daily": 3, "weekly": 2, "monthly": 1}
+# Encoding for categorical frecuencia_apertura_app
+FRECUENCIA_APERTURA_MAP = {
+    "daily": 3,
+    "weekly": 2,
+    "monthly": 1,
+}
+
+# Module-level cache for models
+_MODEL: KMeans | None = None
+_SCALER: StandardScaler | None = None
+_CLUSTER_LABELS: dict[str, str] | None = None
 
 
 # ---------------------------------------------------------------------------
 # Config loaders
 # ---------------------------------------------------------------------------
 
-def _load_biblioteca_config() -> dict[str, Any]:
-    """Carga la configuración del vertical biblioteca."""
+def _load_biblioteca_config() -> dict:
+    """Carga configuración de Vertical 1."""
     with open(config.BIBLIOTECA_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 
-def _get_cluster_label_map() -> dict[str, str]:
-    """Devuelve el mapa cluster_id (str) → user_type desde biblioteca.json."""
-    cfg = _load_biblioteca_config()
-    return cfg["cluster_label_map"]
+def _get_cluster_labels() -> dict[str, str]:
+    """Lee el mapeo cluster_index → user_type desde biblioteca.json."""
+    global _CLUSTER_LABELS
+    if _CLUSTER_LABELS is None:
+        bib_config = _load_biblioteca_config()
+        _CLUSTER_LABELS = bib_config.get("cluster_labels", {})
+        # Ensure all cluster indices are covered (with defaults if missing)
+        for i in range(config.KMEANS_N_CLUSTERS):
+            if str(i) not in _CLUSTER_LABELS:
+                _CLUSTER_LABELS[str(i)] = "lector_casual"
+    return _CLUSTER_LABELS
 
 
 # ---------------------------------------------------------------------------
-# Feature preparation
+# Feature encoding
 # ---------------------------------------------------------------------------
 
-def _prepare_features(user_dict: dict) -> np.ndarray:
-    """Convierte un dict de usuario en vector de features normalizable."""
-    freq_raw = str(user_dict.get("frecuencia_apertura_app", "monthly")).lower()
-    freq_num = _FRECUENCIA_MAP.get(freq_raw, 1)
+def _encode_features(user_dict: dict) -> dict:
+    """Encodes categorical features and ensures all required fields are present.
 
-    row = [
-        float(user_dict.get("libros_leidos_total", 0)),
-        float(user_dict.get("libros_leidos_ultimos_3_meses", 0)),
-        float(user_dict.get("rating_promedio_dado", 0.0)),
-        float(freq_num),
-        float(user_dict.get("ultimo_acceso_dias", 30)),
-        float(int(bool(user_dict.get("lista_deseos_activa", False)))),
-        float(user_dict.get("resenas_escritas", 0)),
-        float(user_dict.get("tenure_meses", 1)),
-        float(user_dict.get("prior_recoveries", 0)),
-    ]
-    return np.array(row, dtype=np.float32)
+    Converts frecuencia_apertura_app (str) → frecuencia_apertura_app_num (int).
+    """
+    encoded = user_dict.copy()
+
+    freq_str = str(user_dict.get("frecuencia_apertura_app", "monthly")).lower()
+    encoded["frecuencia_apertura_app_num"] = FRECUENCIA_APERTURA_MAP.get(freq_str, 1)
+
+    # Ensure bool → int conversion for lista_deseos_activa
+    encoded["lista_deseos_activa"] = int(bool(user_dict.get("lista_deseos_activa", False)))
+
+    return encoded
 
 
-def _prepare_dataframe(df: pd.DataFrame) -> np.ndarray:
-    """Prepara la matriz de features desde un DataFrame de usuarios."""
+def _extract_feature_vector(user_dict: dict) -> np.ndarray:
+    """Extracts and orders behavioral features from user dict into a feature vector."""
+    encoded = _encode_features(user_dict)
+    features = []
+    for feat_name in BEHAVIORAL_FEATURES:
+        val = encoded.get(feat_name, 0)
+        features.append(float(val))
+    return np.array(features, dtype=np.float32).reshape(1, -1)
+
+
+def _extract_feature_matrix(df: pd.DataFrame) -> np.ndarray:
+    """Extracts all behavioral features from DataFrame."""
     freq_mapped = df.get("frecuencia_apertura_app", pd.Series(["monthly"] * len(df)))
-    freq_num = freq_mapped.map(lambda x: _FRECUENCIA_MAP.get(str(x).lower(), 1))
+    freq_num = freq_mapped.map(lambda x: FRECUENCIA_APERTURA_MAP.get(str(x).lower(), 1))
 
     feature_df = pd.DataFrame({
         "libros_leidos_total": pd.to_numeric(df.get("libros_leidos_total", 0), errors="coerce").fillna(0),
@@ -99,146 +117,205 @@ def _prepare_dataframe(df: pd.DataFrame) -> np.ndarray:
         "ultimo_acceso_dias": pd.to_numeric(df.get("ultimo_acceso_dias", 30), errors="coerce").fillna(30),
         "lista_deseos_activa": df.get("lista_deseos_activa", False).astype(int),
         "resenas_escritas": pd.to_numeric(df.get("resenas_escritas", 0), errors="coerce").fillna(0),
-        "tenure_meses": pd.to_numeric(df.get("tenure_meses", 1), errors="coerce").fillna(1),
-        "prior_recoveries": pd.to_numeric(df.get("prior_recoveries", 0), errors="coerce").fillna(0),
     })
-    return feature_df.values.astype(np.float32)
+    return feature_df.values.astype(np.float64)
+
+
+# ---------------------------------------------------------------------------
+# Model persistence
+# ---------------------------------------------------------------------------
+
+def _load_model() -> tuple[KMeans | None, StandardScaler | None]:
+    """Loads KMeans model and scaler from disk if available."""
+    global _MODEL, _SCALER
+
+    if _MODEL is not None and _SCALER is not None:
+        return _MODEL, _SCALER
+
+    model_path = config.KMEANS_BIBLIOTECA_PATH
+    scaler_path = config.KMEANS_SCALER_PATH
+
+    try:
+        if model_path.exists() and scaler_path.exists():
+            with open(model_path, "rb") as f:
+                _MODEL = pickle.load(f)
+            with open(scaler_path, "rb") as f:
+                _SCALER = pickle.load(f)
+            return _MODEL, _SCALER
+    except Exception:
+        pass
+
+    return None, None
+
+
+def _save_model(model: KMeans, scaler: StandardScaler) -> None:
+    """Saves model and scaler to disk."""
+    config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
+
+    with open(config.KMEANS_BIBLIOTECA_PATH, "wb") as f:
+        pickle.dump(model, f)
+
+    with open(config.KMEANS_SCALER_PATH, "wb") as f:
+        pickle.dump(scaler, f)
 
 
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
 
-def train(df: pd.DataFrame) -> Any:
-    """Entrena KMeans sobre el DataFrame de usuarios y persiste modelo + scaler.
+def train(df: pd.DataFrame) -> None:
+    """Fits KMeans on behavioral features and saves model + scaler.
 
     Args:
-        df: DataFrame con al menos las columnas de BEHAVIORAL_FEATURES.
+        df: DataFrame with all BEHAVIORAL_FEATURES columns.
 
-    Returns:
-        El objeto KMeans entrenado.
+    Prints cluster sizes and top 2 features per cluster for validation.
     """
-    from sklearn.cluster import KMeans
-    from sklearn.preprocessing import StandardScaler
+    X = _extract_feature_matrix(df)
 
-    print(f"[clustering] Entrenando KMeans con {len(df)} filas, k={config.KMEANS_N_CLUSTERS}.")
-
-    X = _prepare_dataframe(df)
-
+    # Normalize
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    kmeans = KMeans(
+    # Fit KMeans
+    model = KMeans(
         n_clusters=config.KMEANS_N_CLUSTERS,
         random_state=42,
         n_init=10,
     )
-    kmeans.fit(X_scaled)
+    model.fit(X_scaled)
 
-    config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(config.KMEANS_BIBLIOTECA_PATH, "wb") as f:
-        pickle.dump(kmeans, f)
-    with open(config.KMEANS_SCALER_PATH, "wb") as f:
-        pickle.dump(scaler, f)
+    # Save model and scaler
+    _save_model(model, scaler)
 
-    inertia = kmeans.inertia_
-    print(f"[clustering] Entrenamiento completo. Inercia: {inertia:.2f}")
-    print(f"[clustering] Modelo guardado en {config.KMEANS_BIBLIOTECA_PATH}")
-    print(f"[clustering] Scaler guardado en {config.KMEANS_SCALER_PATH}")
-    return kmeans
+    # Print diagnostics
+    labels = model.labels_
+    cluster_labels = _get_cluster_labels()
+
+    print(f"\n--- KMeans Training Complete (n_clusters={config.KMEANS_N_CLUSTERS}) ---")
+    print(f"  Model saved: {config.KMEANS_BIBLIOTECA_PATH}")
+    print(f"  Scaler saved: {config.KMEANS_SCALER_PATH}\n")
+
+    for cluster_idx in range(config.KMEANS_N_CLUSTERS):
+        mask = labels == cluster_idx
+        cluster_size = mask.sum()
+        user_type = cluster_labels.get(str(cluster_idx), "lector_casual")
+
+        # Top 2 features for this cluster (highest variance in this cluster)
+        cluster_data = X_scaled[mask]
+        feature_variance = cluster_data.std(axis=0)
+        top_feat_indices = np.argsort(feature_variance)[-2:][::-1]
+        top_features = [
+            BEHAVIORAL_FEATURES[i] for i in top_feat_indices
+        ]
+
+        print(
+            f"  Cluster {cluster_idx} [{user_type}]: {cluster_size} users | "
+            f"Top features: {', '.join(top_features)}"
+        )
 
 
 # ---------------------------------------------------------------------------
-# Prediction
+# Inference
 # ---------------------------------------------------------------------------
-
-_KMEANS_CACHE: tuple | None = None
-
-
-def _load_model() -> tuple[Any, Any]:
-    """Carga KMeans + scaler desde disco (lazy singleton)."""
-    global _KMEANS_CACHE
-    if _KMEANS_CACHE is None:
-        if not config.KMEANS_BIBLIOTECA_PATH.exists():
-            raise FileNotFoundError(
-                "Modelo de clustering no entrenado. Ejecutá: python clustering.py --train"
-            )
-        with open(config.KMEANS_BIBLIOTECA_PATH, "rb") as f:
-            kmeans = pickle.load(f)
-        with open(config.KMEANS_SCALER_PATH, "rb") as f:
-            scaler = pickle.load(f)
-        _KMEANS_CACHE = (kmeans, scaler)
-    return _KMEANS_CACHE
-
 
 def predict(user_dict: dict) -> dict[str, Any]:
-    """Asigna user_type y confianza a un usuario a partir de su comportamiento.
+    """Assigns user type and confidence to a single user.
 
     Args:
-        user_dict: Dict con campos comportamentales del usuario (signup + in-app).
+        user_dict: Dict with behavioral feature keys (can be sparse; missing
+                  values default to 0).
 
     Returns:
-        {"user_type": str, "confidence": float}
+        {
+            "user_type": str,        # label from cluster_labels mapping
+            "confidence": float,     # 1 / (1 + distance to centroid)
+        }
     """
-    try:
-        kmeans, scaler = _load_model()
-    except FileNotFoundError:
-        return {"user_type": "lector_casual", "confidence": 0.0}
+    model, scaler = _load_model()
 
-    label_map = _get_cluster_label_map()
+    # Fallback if model not trained
+    if model is None or scaler is None:
+        return {
+            "user_type": "lector_casual",
+            "confidence": 0.0,
+        }
 
-    x = _prepare_features(user_dict).reshape(1, -1)
-    x_scaled = scaler.transform(x)
+    # Extract and scale features
+    X = _extract_feature_vector(user_dict)
+    X_scaled = scaler.transform(X).astype(np.float32)
 
-    cluster_id = int(kmeans.predict(x_scaled)[0])
-    user_type = label_map.get(str(cluster_id), "lector_casual")
+    # Predict cluster
+    cluster_idx = model.predict(X_scaled)[0]
 
-    # Confidence: inverse distance to assigned centroid, normalized to (0, 1].
-    centroid = kmeans.cluster_centers_[cluster_id]
-    dist = float(np.linalg.norm(x_scaled[0] - centroid))
-    confidence = round(1.0 / (1.0 + dist), 4)
+    # Calculate distance to centroid
+    centroid = model.cluster_centers_[cluster_idx]
+    distance = np.linalg.norm(X_scaled[0] - centroid)
+    confidence = 1.0 / (1.0 + distance)
 
-    return {"user_type": user_type, "confidence": confidence}
+    # Map cluster to label
+    cluster_labels = _get_cluster_labels()
+    user_type = cluster_labels.get(str(cluster_idx), "lector_casual")
+
+    return {
+        "user_type": user_type,
+        "confidence": float(confidence),
+    }
 
 
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
+def _demo_predict() -> None:
+    """Predicts on a sample user for demonstration."""
+    sample_user = {
+        "libros_leidos_total": 25,
+        "libros_leidos_ultimos_3_meses": 4,
+        "rating_promedio_dado": 4.2,
+        "frecuencia_apertura_app": "daily",
+        "ultimo_acceso_dias": 2,
+        "lista_deseos_activa": True,
+        "resenas_escritas": 8,
+    }
+
+    result = predict(sample_user)
+    print(f"\n--- Prediction Demo ---")
+    print(f"  Sample user: {sample_user}")
+    print(f"  Result: {result}")
+
+
 def main() -> None:
-    """Punto de entrada CLI para entrenar o hacer una predicción de demo."""
-    parser = argparse.ArgumentParser(description="Clustering de usuarios — Vertical Biblioteca.")
-    parser.add_argument("--train", action="store_true", help="Entrena el modelo KMeans.")
-    parser.add_argument("--dataset", type=str, default=str(config.DATASET_PATH),
-                        help="Ruta al CSV de entrenamiento.")
-    parser.add_argument("--predict-demo", action="store_true",
-                        help="Predicción de demo con un usuario sintético.")
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="Clustering module for Vertical 1 (Biblioteca)."
+    )
+    parser.add_argument(
+        "--train",
+        action="store_true",
+        help="Train KMeans on dataset.",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default=str(config.DATA_DIR / "synthetic" / "biblioteca_events.csv"),
+        help="Path to CSV dataset.",
+    )
+    parser.add_argument(
+        "--predict-demo",
+        action="store_true",
+        help="Test predict() on a sample user.",
+    )
+
     args = parser.parse_args()
 
     if args.train:
-        path = Path(args.dataset)
-        if not path.exists():
-            print(f"[clustering] Error: dataset no encontrado en {path}. Ejecutá python generator.py primero.")
-            return
-        df = pd.read_csv(path)
+        df = pd.read_csv(args.dataset)
         train(df)
-
-    if args.predict_demo:
-        demo_user = {
-            "libros_leidos_total": 35,
-            "libros_leidos_ultimos_3_meses": 6,
-            "rating_promedio_dado": 4.2,
-            "frecuencia_apertura_app": "daily",
-            "ultimo_acceso_dias": 2,
-            "lista_deseos_activa": True,
-            "resenas_escritas": 8,
-            "tenure_meses": 18,
-            "prior_recoveries": 1,
-        }
-        result = predict(demo_user)
-        print("\n--- Demo de clustering ---")
-        print(f"  user_type : {result['user_type']}")
-        print(f"  confidence: {result['confidence']:.4f}")
+    elif args.predict_demo:
+        _demo_predict()
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":

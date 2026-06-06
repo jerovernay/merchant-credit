@@ -93,6 +93,13 @@
     "3": "coleccionista",
     "4": "inactivo_reciente"
   },
+  "cluster_labels": {
+    "0": "lector_fiel",
+    "1": "lector_voraz",
+    "2": "lector_casual",
+    "3": "coleccionista",
+    "4": "inactivo_reciente"
+  },
   "feature_scale_hints": {
     "libros_leidos_total": {"min": 0, "max": 100},
     "libros_leidos_ultimos_3_meses": {"min": 0, "max": 15},
@@ -103,5 +110,37 @@
     "resenas_escritas": {"min": 0, "max": 50},
     "tenure_meses": {"min": 1, "max": 72},
     "prior_recoveries": {"min": 0, "max": 10}
+  },
+  "city_distribution": {
+    "amba": {
+      "weight": 0.60,
+      "cities": ["Buenos Aires", "CABA", "La Plata"]
+    },
+    "provincial": {
+      "weight": 0.25,
+      "cities": ["Córdoba", "Rosario", "Mendoza", "San Miguel de Tucumán", "Salta", "Santa Fe", "Mar del Plata", "Resistencia", "San Juan"]
+    },
+    "interior": {
+      "weight": 0.15,
+      "cities": ["Bahía Blanca", "Posadas", "Formosa", "Río Cuarto", "Santiago del Estero", "San Luis", "Catamarca", "Comodoro Rivadavia", "Ushuaia", "Santa Rosa"]
+    }
+  },
+  "decline_code_weights": {
+    "51": 0.50,
+    "05": 0.10,
+    "54": 0.08,
+    "65": 0.10,
+    "91": 0.07,
+    "61": 0.05,
+    "57": 0.03,
+    "62": 0.03,
+    "41": 0.02,
+    "43": 0.01,
+    "14": 0.01
+  },
+  "signup_defaults": {
+    "country": "Argentina",
+    "autores_populares": ["Jorge Luis Borges", "Julio Cortázar", "Haroldo Conti", "Ariel Magnus", "Marisa Silver", "Claudia Piñeiro"],
+    "generos_populares": ["Ficción", "Misterio", "Romance", "Ciencia Ficción", "Poesía", "Historia"]
   }
 }

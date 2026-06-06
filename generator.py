@@ -1,302 +1,356 @@
-"""Generador de dataset sintético para Retenelo.
+# === generator.py ===
+"""Generador de dataset sintético para Vertical 1: Biblioteca de suscripción.
 
-División de trabajo:
-  - numpy = backbone: TODA columna con distribución controlada y la etiqueta se
-    muestrea con ``rng.choice(p=weights)`` y sorteos numéricos. Es lo que entrena el
-    modelo: determinista (con seed), rápido, gratis y con distribución exacta.
-  - Haiku = textura (opcional): solo la columna libre ``contexto_cliente``. Nunca toca
-    la etiqueta ni los pesos. Si no hay API key o se pasa --no-haiku, se usa una
-    plantilla numpy y el dataset sigue siendo válido.
-
-Las distribuciones de arquetipos y códigos NO son uniformes: salen de
-``prevalencia_weight`` en los catálogos JSON (config over hardcoding). El código 51
-domina y los arquetipos raros quedan en minoría, reflejando la realidad argentina.
-
-Anti-circularidad: la etiqueta ``recovered`` no es función determinista de las
-features. Se calcula una probabilidad p (base del arquetipo x multiplicadores de
-código/timing/canal/intentos) con ruido, y luego ``recovered ~ Bernoulli(p)``. Así el
-modelo aprende una señal real y ruidosa (métricas creíbles, no perfectas).
+Genera eventos de pago fallido con todas las señales de signup e in-app behavior.
+Distribuciones: código 51 ~50%, ciudades sesgadas AMBA ~60%, DNI uniform,
+ultimo_acceso_dias sesgado a reciente.
 
 Uso:
-    python generator.py                 # backbone numpy (sin Haiku)
-    python generator.py --rows 20000 --seed 42
-    python generator.py --haiku         # agrega textura con claude-haiku-4-5
+    python generator.py                    # 1000 rows, seed=42
+    python generator.py --rows 5000 --seed 123
+    python generator.py --out custom_path.csv
 """
 from __future__ import annotations
 
 import argparse
 import json
 from datetime import date, timedelta
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 import config
-from data import salary_calendar as sc
-
-# --- Parámetros de realismo sintético (estimaciones; no son reglas de negocio) ---
-REDES = ["Visa", "Mastercard", "Cabal", "Amex", "Naranja"]
-RED_WEIGHTS = [0.48, 0.30, 0.10, 0.06, 0.06]
-RED_BIN_PREFIX = {"Visa": "4", "Mastercard": "5", "Cabal": "6", "Amex": "3", "Naranja": "5"}
-RED_DEBITO_PROB = {"Cabal": 0.85, "Visa": 0.30, "Mastercard": 0.30, "Amex": 0.10, "Naranja": 0.20}
-
-ACQUIRERS = ["Payway", "Fiserv", "Geopagos", "Other"]
-ACQUIRER_WEIGHTS = [0.55, 0.20, 0.15, 0.10]
-
-ARPU_BAND_MEAN_ARS = {"baja": 3500, "media": 7000, "media_alta": 12000, "alta": 22000}
-TENURE_BAND_RANGO = {"baja": (1, 6), "media": (6, 24), "alta": (24, 72)}
-
-# Distribución de intentos: Retenelo entra con attempt_number >= 1; cola hasta 15.
-_ATTEMPTS = np.arange(1, 16)
-_ATTEMPT_WEIGHTS = 0.7 ** (_ATTEMPTS - 1)
-_ATTEMPT_WEIGHTS = _ATTEMPT_WEIGHTS / _ATTEMPT_WEIGHTS.sum()
-
-# Probabilidad de muestrear la acción "alineada" (vs exploración aleatoria) en el log.
-P_ACCION_ALINEADA = 0.6
-
-# Rango temporal de los eventos sintéticos (hasta la fecha actual del proyecto).
-FECHA_FIN = date(2026, 6, 6)
-FECHA_INICIO = date(2025, 7, 1)
-
-COLUMNAS = [
-    "id_evento", "fecha_evento",
-    "decline_code", "decline_tipo", "red", "acquirer", "bin", "card_type",
-    "monto_ars", "attempt_number", "tokenized", "card_expiry_delta_dias",
-    "user_id", "archetype_id", "employment_type", "digital_literacy",
-    "tenure_meses", "prior_recoveries", "engagement_recency_dias", "arpu_ars",
-    "day_of_month", "days_to_quincena", "days_to_fin_de_mes",
-    "is_aguinaldo_month", "anses_pay_flag",
-    "indec_ipc_mom", "bcra_rate", "billetera_yield_proxy",
-    "action_window", "action_channel", "action_tone",
-    "recovered", "recovery_day_offset",
-    "contexto_cliente",
-]
 
 
-def _cargar_catalogos() -> tuple[dict, dict]:
-    """Carga arquetipos y códigos de rechazo desde los JSON."""
-    with open(config.ARCHETYPES_PATH, encoding="utf-8") as f:
-        archetypes = json.load(f)["archetypes"]
+def _load_biblioteca_config() -> dict:
+    """Carga configuración de Vertical 1 desde data/services/biblioteca.json."""
+    with open(config.BIBLIOTECA_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_decline_codes() -> dict:
+    """Carga códigos de rechazo desde decline_codes.json."""
     with open(config.DECLINE_CODES_PATH, encoding="utf-8") as f:
-        codes = json.load(f)["codes"]
-    return archetypes, codes
+        return json.load(f)["codes"]
 
 
-def _pesos_normalizados(d: dict) -> tuple[list, np.ndarray]:
-    """Devuelve (claves, pesos normalizados) a partir de un dict {clave: peso}."""
-    claves = list(d.keys())
-    pesos = np.array([d[k] if not isinstance(d[k], dict) else d[k]["prevalencia_weight"]
-                      for k in claves], dtype=float)
-    return claves, pesos / pesos.sum()
+def _generate_firstname(rng: np.random.Generator) -> str:
+    """Nombres argentinos frecuentes."""
+    nombres = [
+        "Juan", "María", "Carlos", "Ana", "José", "Laura", "Roberto", "Patricia",
+        "Diego", "Sandra", "Fernando", "Claudia", "Andrés", "Mónica", "Martín",
+        "Lorena", "Miguel", "Elena", "Pablo", "Silvia", "Ricardo", "Cecilia",
+        "Gustavo", "Roxana", "Sergio", "Verónica", "Raúl", "Nora", "Francisco",
+        "Gabriela", "Lucas", "Alejandra", "Tomás", "Daniela", "Javier", "Valeria"
+    ]
+    return str(rng.choice(nombres))
 
 
-def _ventana_alineada(arch: dict, code_info: dict) -> str:
-    """Ventana de reintento 'correcta' para este arquetipo+código."""
-    if code_info["requiere_ventana_salarial"]:
-        return arch["ventana_salarial"]
-    return code_info["ventana_sugerida"] or "inmediata"
+def _generate_lastname(rng: np.random.Generator) -> str:
+    """Apellidos argentinos frecuentes."""
+    apellidos = [
+        "García", "López", "González", "Martínez", "Rodríguez", "Pérez", "Sánchez",
+        "Ramirez", "Flores", "Rivera", "Cruz", "Moreno", "Gutiérrez", "Ortiz",
+        "Jiménez", "Hernández", "Vargas", "Castillo", "Rojas", "Díaz", "Santos",
+        "Morales", "Reyes", "Domínguez", "Vega", "Salazar", "Campos", "Núñez",
+        "Fuentes", "Medina", "Delgado", "Silva", "Carrillo", "Ruiz", "Espinoza"
+    ]
+    return str(rng.choice(apellidos))
 
 
-def _muestrear_codigo(arch: dict, codes_glob: list, pesos_glob: np.ndarray,
-                      rng: np.random.Generator) -> str:
-    """Mezcla afinidad del arquetipo con la prevalencia global (asegura hard declines)."""
-    if rng.random() < config.GENERATOR_ALPHA_ARQUETIPO:
-        claves, pesos = _pesos_normalizados(arch["likely_decline_codes"])
-        return str(rng.choice(claves, p=pesos))
-    return str(rng.choice(codes_glob, p=pesos_glob))
+def _generate_cuit_dni(rng: np.random.Generator) -> str:
+    """DNI/CUIT argentino realista (11 dígitos para CUIT, 8 para DNI; usa CUIT)."""
+    prefix = "23"  # CUIT prefix (simplificado; en realidad varía)
+    dni = str(rng.integers(10000000, 99999999))
+    verifier = str(rng.integers(0, 10))
+    return prefix + dni + verifier
 
 
-def _muestrear_accion(arch: dict, code_info: dict, rng: np.random.Generator) -> dict:
-    """Acción registrada en el log sintético: alineada con prob P_ACCION_ALINEADA, si no aleatoria."""
-    alineada = _ventana_alineada(arch, code_info)
-    window = alineada if rng.random() < P_ACCION_ALINEADA else str(rng.choice(config.VENTANAS_REINTENTO))
-    channel = arch["best_channel"] if rng.random() < P_ACCION_ALINEADA else str(rng.choice(config.CANALES))
-    tone = arch["tono_preferido"] if rng.random() < P_ACCION_ALINEADA else str(rng.choice(config.TONOS))
-    return {"action_window": window, "action_channel": channel, "action_tone": tone}
+def _generate_ciudad_provincia(rng: np.random.Generator, bib_config: dict) -> tuple[str, str]:
+    """Elige ciudad realista sesgada a AMBA, luego provincia correspondiente."""
+    cities_dist = bib_config.get("city_distribution", {})
+
+    tiers = ["amba", "provincial", "interior"]
+    weights = [cities_dist.get(t, {}).get("weight", 0.33) for t in tiers]
+    weights = np.array(weights) / np.array(weights).sum()
+
+    tier = str(rng.choice(tiers, p=weights))
+    cities_list = cities_dist.get(tier, {}).get("cities", ["Buenos Aires"])
+    ciudad = str(rng.choice(cities_list))
+
+    geo_tiers = _load_geo_tiers()
+    provincia = geo_tiers.get("cities", {}).get(ciudad)
+    if not provincia:
+        provincia = geo_tiers.get("provinces", {}).get(ciudad, "Buenos Aires")
+
+    provincia_name = _get_provincia_nombre(provincia, geo_tiers)
+
+    return ciudad, provincia_name
 
 
-def _prob_recuperacion(arch: dict, code_info: dict, accion: dict, attempt_number: int,
-                       cabal_debito: bool, rng: np.random.Generator) -> float:
-    """Probabilidad latente de recuperación (con ruido). Base del label Bernoulli."""
-    p = arch["base_recovery_rate"]
-
-    # Código: los hard declines casi no se recuperan vía reintento.
-    if code_info["never_retry"]:
-        p *= 0.15
-    elif not code_info["recuperable"]:
-        p *= 0.30
-    if cabal_debito:
-        p *= 0.10  # débito automático Cabal ~ no colectable por reintento
-
-    # Timing: la ventana alineada es la palanca de mayor impacto.
-    alineada = _ventana_alineada(arch, code_info)
-    if accion["action_window"] == alineada:
-        p *= 1.25
-    elif accion["action_window"] == "inmediata":
-        p *= 0.85  # reintentar ya mismo un problema de fondos rinde poco
-    else:
-        p *= 0.90
-
-    # Canal: respuesta del arquetipo al canal elegido (0..1 -> multiplicador 0.6..1.1).
-    resp = arch["channel_responsiveness"].get(accion["action_channel"], 0.5)
-    p *= 0.6 + 0.5 * resp
-
-    # Tono: leve aporte si coincide con el preferido.
-    if accion["action_tone"] == arch["tono_preferido"]:
-        p *= 1.05
-
-    # Intentos: más intentos -> más difícil (fatiga / caso genuinamente duro).
-    p *= max(0.2, 1.0 - 0.05 * (attempt_number - 1))
-
-    # Ruido gaussiano para evitar que el modelo memorice la fórmula.
-    p *= rng.normal(1.0, 0.08)
-    return float(np.clip(p, 0.01, 0.97))
+def _load_geo_tiers() -> dict:
+    """Carga geo_tiers.json para mapping ciudad -> provincia."""
+    geo_path = config.DATA_DIR / "geo_tiers.json"
+    with open(geo_path, encoding="utf-8") as f:
+        return json.load(f)
 
 
-def _columna_contexto(df: pd.DataFrame, archetypes: dict, usar_haiku: bool) -> pd.Series:
-    """Textura libre por fila. Haiku si está disponible; si no, plantilla numpy."""
-    notas = None
-    if usar_haiku:
-        try:
-            notas = _haiku_notas_por_arquetipo(list(archetypes.values()))
-        except Exception as e:  # ImportError, RuntimeError (sin key), etc.
-            print(f"[generator] Haiku no disponible ({e}); uso plantillas numpy.")
-    if notas:
-        return df["archetype_id"].map(lambda a: notas.get(a, archetypes[a]["nombre"]))
-    return df["archetype_id"].map(
-        lambda a: f"{archetypes[a]['nombre']} ({archetypes[a]['financial_behavior']})"
-    )
+def _get_provincia_nombre(tier_or_name: str | int, geo_tiers: dict) -> str:
+    """Resuelve nombre de provincia desde tier o nombre."""
+    if isinstance(tier_or_name, int):
+        tier_map = {1: "Buenos Aires", 2: "Córdoba", 3: "Interior"}
+        return tier_map.get(tier_or_name, "Buenos Aires")
+    return str(tier_or_name)
 
 
-def _haiku_notas_por_arquetipo(archetypes_list: list[dict]) -> dict[str, str]:
-    """Una sola llamada a Haiku que devuelve {archetype_id: nota corta}. [texture only].
+def _generate_address(rng: np.random.Generator) -> tuple[str, str, str]:
+    """street_address, postcode (simulado)."""
+    streets = ["Avenida", "Calle", "Pasaje", "Boulevard", "Camino"]
+    street_names = ["9 de Julio", "Corrientes", "Libertad", "Santa Fe", "Belgrano",
+                   "Rivadavia", "Mitre", "Tucumán", "Sarmiento", "Lavalle"]
+    number = str(rng.integers(100, 9999))
+    street = f"{str(rng.choice(streets))} {str(rng.choice(street_names))} {number}"
 
-    Se importa llm_client de forma perezosa: si todavía no existe o no hay API key,
-    el caller cae a plantillas numpy.
+    postcode = str(rng.integers(1000, 9999))
+
+    return street, postcode
+
+
+def _generate_phone(rng: np.random.Generator) -> str:
+    """Teléfono argentino: +54 9 (area) (number)."""
+    area = str(rng.integers(200, 399))
+    number = str(rng.integers(10000000, 99999999))
+    return f"+54 9 {area} {number}"
+
+
+def _generate_email(first_name: str, last_name: str, rng: np.random.Generator) -> str:
+    """Email realista."""
+    domains = ["gmail.com", "yahoo.com.ar", "hotmail.com", "outlook.com", "yahoo.com"]
+    separator = str(rng.choice([".", "_", ""]))
+    domain = str(rng.choice(domains))
+    return f"{first_name.lower()}{separator}{last_name.lower()}@{domain}"
+
+
+def _generate_libros_leidos(rng: np.random.Generator) -> int:
+    """Cantidad de libros leídos (sesgado a bajo)."""
+    return int(np.clip(rng.exponential(8), 0, 100))
+
+
+def _generate_libros_3m(libros_total: int, rng: np.random.Generator) -> int:
+    """Libros leídos en últimos 3 meses (correlacionado con total)."""
+    frac = rng.uniform(0, min(0.6, 1.0))
+    return int(np.clip(libros_total * frac, 0, 15))
+
+
+def _generate_rating_promedio(rng: np.random.Generator) -> float:
+    """Rating promedio dado (0-5, sesgado a alto)."""
+    return float(np.clip(rng.beta(5, 2) * 5, 0, 5))
+
+
+def _generate_frecuencia_apertura(rng: np.random.Generator) -> str:
+    """Frecuencia de apertura: daily, weekly, monthly."""
+    opciones = ["daily", "weekly", "monthly"]
+    pesos = np.array([0.20, 0.40, 0.40])
+    return str(rng.choice(opciones, p=pesos))
+
+
+def _generate_ultimo_acceso_dias(rng: np.random.Generator) -> int:
+    """Días desde último acceso (sesgado a reciente)."""
+    return int(np.clip(rng.exponential(15), 0, 365))
+
+
+def _generate_lista_deseos(rng: np.random.Generator) -> bool:
+    """Tiene lista de deseos activa."""
+    return bool(rng.random() < 0.45)
+
+
+def _generate_resenas_escritas(rng: np.random.Generator) -> int:
+    """Cantidad de reseñas escritas (mayoría 0)."""
+    if rng.random() < 0.7:
+        return 0
+    return int(np.clip(rng.poisson(3), 0, 50))
+
+
+def _generate_autor_favorito(bib_config: dict, rng: np.random.Generator) -> str | None:
+    """Autor favorito si existe."""
+    if rng.random() < 0.65:
+        autores = bib_config.get("signup_defaults", {}).get("autores_populares", ["Borges"])
+        return str(rng.choice(autores))
+    return None
+
+
+def _generate_genero_favorito(bib_config: dict, rng: np.random.Generator) -> str | None:
+    """Género favorito si existe."""
+    if rng.random() < 0.70:
+        generos = bib_config.get("signup_defaults", {}).get("generos_populares", ["Ficción"])
+        return str(rng.choice(generos))
+    return None
+
+
+def _generate_decline_code(
+    bib_config: dict, rng: np.random.Generator
+) -> str:
+    """Código de rechazo sesgado a 51 (~50%)."""
+    weights_dict = bib_config.get("decline_code_weights", {})
+    if not weights_dict:
+        codes_data = _load_decline_codes()
+        weights_dict = {
+            code: info.get("prevalencia_weight", 0.01)
+            for code, info in codes_data.items()
+        }
+
+    codes = list(weights_dict.keys())
+    weights = np.array([weights_dict[c] for c in codes])
+    weights = weights / weights.sum()
+
+    return str(rng.choice(codes, p=weights))
+
+
+def _generate_attempt_number(rng: np.random.Generator) -> int:
+    """Número de intento (1-15, sesgado a intentos tempranos)."""
+    attempts = np.arange(1, 16)
+    probs = 0.75 ** (attempts - 1)
+    probs = probs / probs.sum()
+    return int(rng.choice(attempts, p=probs))
+
+
+def _generate_event_date(rng: np.random.Generator) -> str:
+    """Fecha del evento (últimos 6 meses)."""
+    start = date(2025, 12, 6)
+    end = date(2026, 6, 6)
+    span = (end - start).days
+    event_date = start + timedelta(days=int(rng.integers(0, span + 1)))
+    return event_date.isoformat()
+
+
+def generate(
+    n: int = 1000,
+    output_path: Path | str | None = None,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Genera dataset sintético de eventos de pago fallido para Biblioteca.
+
+    Args:
+        n: Cantidad de filas.
+        output_path: Ruta de salida. Defaults a config.BIBLIOTECA_EVENTS_PATH.
+        seed: Seed para reproducibilidad.
+
+    Returns:
+        DataFrame con todas las columnas generadas.
     """
-    from llm_client import completar_haiku_json  # lazy import (módulo posterior)
+    if output_path is None:
+        output_path = config.DATA_DIR / "synthetic" / "biblioteca_events.csv"
 
-    perfiles = [{"id": a["id"], "nombre": a["nombre"],
-                 "comportamiento": a["financial_behavior"]} for a in archetypes_list]
-    prompt = (
-        "Sos un generador de datos. Para cada arquetipo de cliente argentino, escribí una "
-        "nota interna muy breve (max 12 palabras, en español rioplatense) que describa su "
-        "contexto de pago. Devolvé SOLO un JSON {id: nota}.\n\n"
-        f"Arquetipos: {json.dumps(perfiles, ensure_ascii=False)}"
-    )
-    return completar_haiku_json(prompt)
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-
-def build_dataset(n_rows: int, seed: int, usar_haiku: bool = False) -> pd.DataFrame:
-    """Genera el DataFrame sintético completo (backbone numpy)."""
     rng = np.random.default_rng(seed)
-    archetypes, codes = _cargar_catalogos()
-
-    arch_ids, arch_w = _pesos_normalizados({k: v for k, v in archetypes.items()})
-    code_ids, code_w = _pesos_normalizados({k: v for k, v in codes.items()})
-    span = (FECHA_FIN - FECHA_INICIO).days
+    bib_config = _load_biblioteca_config()
 
     filas = []
-    for i in range(n_rows):
-        archetype_id = str(rng.choice(arch_ids, p=arch_w))
-        arch = archetypes[archetype_id]
-        decline_code = _muestrear_codigo(arch, code_ids, code_w, rng)
-        code_info = codes[decline_code]
+    for i in range(n):
+        first_name = _generate_firstname(rng)
+        last_name = _generate_lastname(rng)
+        ciudad, state = _generate_ciudad_provincia(rng, bib_config)
+        street_address, postcode = _generate_address(rng)
+        phone = _generate_phone(rng)
+        email = _generate_email(first_name, last_name, rng)
+        cuit_dni = _generate_cuit_dni(rng)
 
-        fecha = FECHA_INICIO + timedelta(days=int(rng.integers(0, span + 1)))
-        feats = sc.features_temporales(fecha)
+        libros_leidos_total = _generate_libros_leidos(rng)
+        libros_leidos_ultimos_3_meses = _generate_libros_3m(libros_leidos_total, rng)
+        rating_promedio_dado = _generate_rating_promedio(rng)
+        frecuencia_apertura_app = _generate_frecuencia_apertura(rng)
+        ultimo_acceso_dias = _generate_ultimo_acceso_dias(rng)
+        lista_deseos_activa = _generate_lista_deseos(rng)
+        resenas_escritas = _generate_resenas_escritas(rng)
+        autor_favorito = _generate_autor_favorito(bib_config, rng)
+        genero_favorito = _generate_genero_favorito(bib_config, rng)
 
-        red = str(rng.choice(REDES, p=RED_WEIGHTS))
-        card_type = "debito" if rng.random() < RED_DEBITO_PROB[red] else "credito"
-        cabal_debito = (red == "Cabal" and card_type == "debito")
-        bin_num = RED_BIN_PREFIX[red] + "".join(str(rng.integers(0, 10)) for _ in range(5))
-        acquirer = str(rng.choice(ACQUIRERS, p=ACQUIRER_WEIGHTS))
-
-        arpu = float(rng.lognormal(np.log(ARPU_BAND_MEAN_ARS[arch["arpu_band"]]), 0.30))
-        monto = round(arpu * rng.uniform(0.9, 1.1), -2)
-        attempt_number = int(rng.choice(_ATTEMPTS, p=_ATTEMPT_WEIGHTS))
-        tokenized = bool(rng.random() < 0.6)
-        if decline_code == "54":
-            card_expiry_delta = int(rng.integers(-365, -1))  # vencida
-        else:
-            card_expiry_delta = int(np.clip(rng.normal(300, 200), -60, 1000))
-
-        tmin, tmax = TENURE_BAND_RANGO[arch["tenure_band"]]
-        tenure = int(rng.integers(tmin, tmax + 1))
-        prior_recoveries = int(rng.poisson(tenure / 18.0))
-        engagement_recency = int(np.clip(rng.exponential(20), 0, 365))
-
-        indec_ipc = float(np.clip(rng.normal(0.045, 0.015), 0.005, 0.15))
-        bcra = float(np.clip(rng.normal(0.55, 0.08), 0.20, 1.00))
-        billetera = float(bcra * rng.uniform(0.7, 0.95))
-
-        accion = _muestrear_accion(arch, code_info, rng)
-        p = _prob_recuperacion(arch, code_info, accion, attempt_number, cabal_debito, rng)
-        recovered = int(rng.random() < p)
-        if recovered:
-            retry_date = sc.proxima_ventana_cobro(fecha, accion["action_window"])
-            recovery_day_offset = max(0, (retry_date - fecha).days + int(rng.integers(0, 3)))
-        else:
-            recovery_day_offset = -1
+        decline_code = _generate_decline_code(bib_config, rng)
+        attempt_number = _generate_attempt_number(rng)
+        event_date = _generate_event_date(rng)
 
         filas.append({
-            "id_evento": f"EVT{i:07d}",
-            "fecha_evento": fecha.isoformat(),
+            "user_id": f"USR{i:07d}",
+            "event_date": event_date,
+            "first_name": first_name,
+            "last_name": last_name,
+            "country": "Argentina",
+            "street_address": street_address,
+            "ciudad": ciudad,
+            "state": state,
+            "postcode": postcode,
+            "phone": phone,
+            "email": email,
+            "cuit_dni": cuit_dni,
+            "payment_email": email,
+            "libros_leidos_total": int(libros_leidos_total),
+            "libros_leidos_ultimos_3_meses": int(libros_leidos_ultimos_3_meses),
+            "rating_promedio_dado": float(round(rating_promedio_dado, 2)),
+            "frecuencia_apertura_app": frecuencia_apertura_app,
+            "ultimo_acceso_dias": int(ultimo_acceso_dias),
+            "lista_deseos_activa": bool(lista_deseos_activa),
+            "resenas_escritas": int(resenas_escritas),
+            "autor_favorito": autor_favorito,
+            "genero_favorito": genero_favorito,
             "decline_code": decline_code,
-            "decline_tipo": code_info["tipo"],
-            "red": red,
-            "acquirer": acquirer,
-            "bin": bin_num,
-            "card_type": card_type,
-            "monto_ars": monto,
             "attempt_number": attempt_number,
-            "tokenized": tokenized,
-            "card_expiry_delta_dias": card_expiry_delta,
-            "user_id": f"USR{int(rng.integers(0, n_rows * 3)):07d}",
-            "archetype_id": archetype_id,
-            "employment_type": arch["employment_type"],
-            "digital_literacy": arch["digital_literacy"],
-            "tenure_meses": tenure,
-            "prior_recoveries": prior_recoveries,
-            "engagement_recency_dias": engagement_recency,
-            "arpu_ars": round(arpu, -2),
-            "day_of_month": feats["day_of_month"],
-            "days_to_quincena": feats["days_to_quincena"],
-            "days_to_fin_de_mes": feats["days_to_fin_de_mes"],
-            "is_aguinaldo_month": feats["is_aguinaldo_month"],
-            "anses_pay_flag": feats["anses_pay_flag"],
-            "indec_ipc_mom": round(indec_ipc, 4),
-            "bcra_rate": round(bcra, 4),
-            "billetera_yield_proxy": round(billetera, 4),
-            "action_window": accion["action_window"],
-            "action_channel": accion["action_channel"],
-            "action_tone": accion["action_tone"],
-            "recovered": recovered,
-            "recovery_day_offset": recovery_day_offset,
         })
 
     df = pd.DataFrame(filas)
-    df["contexto_cliente"] = _columna_contexto(df, archetypes, usar_haiku)
-    return df[COLUMNAS]
+
+    # Orden de columnas: signup, in-app behavior, transaction
+    column_order = [
+        "user_id", "event_date",
+        "first_name", "last_name", "country", "street_address", "ciudad", "state",
+        "postcode", "phone", "email", "cuit_dni", "payment_email",
+        "libros_leidos_total", "libros_leidos_ultimos_3_meses", "rating_promedio_dado",
+        "frecuencia_apertura_app", "ultimo_acceso_dias", "lista_deseos_activa",
+        "resenas_escritas", "autor_favorito", "genero_favorito",
+        "decline_code", "attempt_number",
+    ]
+    df = df[column_order]
+
+    df.to_csv(output_path, index=False, encoding="utf-8")
+
+    return df
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generador de dataset sintético de Retenelo.")
-    parser.add_argument("--rows", type=int, default=config.GENERATOR_DEFAULT_ROWS)
-    parser.add_argument("--seed", type=int, default=config.GENERATOR_DEFAULT_SEED)
-    parser.add_argument("--haiku", action="store_true", help="Agrega textura con claude-haiku-4-5.")
-    parser.add_argument("--out", type=str, default=str(config.DATASET_PATH))
-    args = parser.parse_args()
-
-    config.SYNTHETIC_DIR.mkdir(parents=True, exist_ok=True)
-    df = build_dataset(args.rows, args.seed, usar_haiku=args.haiku)
-    df.to_csv(args.out, index=False, encoding="utf-8")
-
-    print(f"OK - {len(df)} filas -> {args.out}")
-    print(f"  recovered media: {df['recovered'].mean():.3f}")
-    print("  top arquetipos:", df["archetype_id"].value_counts(normalize=True).head(4).round(3).to_dict())
-    print("  top códigos:", df["decline_code"].value_counts(normalize=True).head(4).round(3).to_dict())
+def _print_summary(df: pd.DataFrame) -> None:
+    """Imprime resumen de distribuciones."""
+    print(f"\n--- Dataset Summary (N={len(df)}) ---")
+    print(f"  Decline code 51 prevalence: {(df['decline_code'] == '51').mean():.3f}")
+    print(f"  Top 3 decline codes:")
+    for code, pct in df["decline_code"].value_counts(normalize=True).head(3).items():
+        print(f"    {code}: {pct:.3f}")
+    print(f"  Top 5 cities:")
+    for city, pct in df["ciudad"].value_counts(normalize=True).head(5).items():
+        print(f"    {city}: {pct:.3f}")
+    print(f"  AMBA prevalence (Buenos Aires + CABA + La Plata): "
+          f"{df[df['ciudad'].isin(['Buenos Aires', 'CABA', 'La Plata'])].shape[0] / len(df):.3f}")
+    print(f"  Attempt distribution: {dict(df['attempt_number'].value_counts(normalize=True).round(3))}")
+    print(f"  libro_leidos_total — mean: {df['libros_leidos_total'].mean():.1f}, "
+          f"median: {df['libros_leidos_total'].median():.1f}")
+    print(f"  ultimo_acceso_dias — mean: {df['ultimo_acceso_dias'].mean():.1f}, "
+          f"median: {df['ultimo_acceso_dias'].median():.1f}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Generador de dataset sintético para Vertical 1 (Biblioteca)."
+    )
+    parser.add_argument("--rows", type=int, default=1000, help="Cantidad de filas.")
+    parser.add_argument("--seed", type=int, default=42, help="Seed para reproducibilidad.")
+    parser.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="Ruta de salida. Default: data/synthetic/biblioteca_events.csv",
+    )
+    args = parser.parse_args()
+
+    df = generate(n=args.rows, output_path=args.out, seed=args.seed)
+    _print_summary(df)
+    print(f"  OK - Escribido: {args.out or 'data/synthetic/biblioteca_events.csv'}")
