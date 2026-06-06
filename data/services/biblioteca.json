@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "vertical": "biblioteca_suscripcion",
+    "descripcion": "Configuración de Vertical 1: plataformas de suscripción de libros (ej. Bukku, Escape a Pluton).",
+    "version": "1.0"
+  },
+  "behavioral_features": [
+    "libros_leidos_total",
+    "libros_leidos_ultimos_3_meses",
+    "rating_promedio_dado",
+    "frecuencia_apertura_app_num",
+    "ultimo_acceso_dias",
+    "lista_deseos_activa",
+    "resenas_escritas",
+    "tenure_meses",
+    "prior_recoveries"
+  ],
+  "frecuencia_apertura_map": {
+    "daily": 3,
+    "weekly": 2,
+    "monthly": 1
+  },
+  "user_types": {
+    "lector_voraz": {
+      "sampling_weight": 0.25,
+      "descripcion": "Lee mucho, abre la app frecuentemente, géneros variados.",
+      "canal_preferido": "push",
+      "tono_preferido": "cercano",
+      "base_recovery_rate": 0.58,
+      "feature_hints": {
+        "libros_leidos_total": "alto (>= 20)",
+        "libros_leidos_ultimos_3_meses": "alto (>= 4)",
+        "frecuencia_apertura_app": "daily o weekly",
+        "ultimo_acceso_dias": "bajo (<= 7)"
+      }
+    },
+    "lector_fiel": {
+      "sampling_weight": 0.30,
+      "descripcion": "Frecuencia media, leal a un género/autor específico.",
+      "canal_preferido": "email",
+      "tono_preferido": "cercano",
+      "base_recovery_rate": 0.50,
+      "feature_hints": {
+        "libros_leidos_total": "medio (5-19)",
+        "libros_leidos_ultimos_3_meses": "medio (2-3)",
+        "frecuencia_apertura_app": "weekly",
+        "rating_promedio_dado": "alto (>= 3.5)"
+      }
+    },
+    "lector_casual": {
+      "sampling_weight": 0.25,
+      "descripcion": "Baja frecuencia, pocos libros leídos.",
+      "canal_preferido": "email",
+      "tono_preferido": "empatico",
+      "base_recovery_rate": 0.35,
+      "feature_hints": {
+        "libros_leidos_total": "bajo (<= 4)",
+        "libros_leidos_ultimos_3_meses": "bajo (0-1)",
+        "frecuencia_apertura_app": "monthly",
+        "ultimo_acceso_dias": "medio (8-30)"
+      }
+    },
+    "coleccionista": {
+      "sampling_weight": 0.10,
+      "descripcion": "Lee poco pero tiene lista de deseos muy activa, escribe reseñas.",
+      "canal_preferido": "email",
+      "tono_preferido": "incentivado",
+      "base_recovery_rate": 0.42,
+      "feature_hints": {
+        "libros_leidos_total": "bajo-medio",
+        "lista_deseos_activa": true,
+        "resenas_escritas": "alto (>= 5)",
+        "frecuencia_apertura_app": "weekly"
+      }
+    },
+    "inactivo_reciente": {
+      "sampling_weight": 0.10,
+      "descripcion": "Estaba activo, dejó de usar la app en los últimos 30-60 días.",
+      "canal_preferido": "whatsapp",
+      "tono_preferido": "empatico",
+      "base_recovery_rate": 0.28,
+      "feature_hints": {
+        "ultimo_acceso_dias": "alto (>= 30)",
+        "libros_leidos_ultimos_3_meses": "bajo (0-1)",
+        "frecuencia_apertura_app": "monthly o nunca reciente"
+      }
+    }
+  },
+  "cluster_label_map": {
+    "0": "lector_fiel",
+    "1": "lector_voraz",
+    "2": "lector_casual",
+    "3": "coleccionista",
+    "4": "inactivo_reciente"
+  },
+  "feature_scale_hints": {
+    "libros_leidos_total": {"min": 0, "max": 100},
+    "libros_leidos_ultimos_3_meses": {"min": 0, "max": 15},
+    "rating_promedio_dado": {"min": 0, "max": 5},
+    "frecuencia_apertura_app_num": {"min": 1, "max": 3},
+    "ultimo_acceso_dias": {"min": 0, "max": 180},
+    "lista_deseos_activa": {"min": 0, "max": 1},
+    "resenas_escritas": {"min": 0, "max": 50},
+    "tenure_meses": {"min": 1, "max": 72},
+    "prior_recoveries": {"min": 0, "max": 10}
+  }
+}
