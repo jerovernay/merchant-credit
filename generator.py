@@ -188,6 +188,40 @@ def _generate_genero_favorito(bib_config: dict, rng: np.random.Generator) -> str
     return None
 
 
+def _generate_tier_gasto(libros_leidos_total: int, bib_config: dict, rng: np.random.Generator) -> str:
+    """Tier de gasto correlacionado con libros leídos."""
+    dist = bib_config["field_distributions"]["tier_gasto"]
+    values = dist["values"]   # ["Low", "Medium", "High"]
+    weights = np.array(dist["weights"], dtype=float)
+
+    # Skew: high readers → higher spend, low readers → lower spend
+    if libros_leidos_total >= 20:
+        weights = weights * np.array([0.5, 1.0, 2.0])
+    elif libros_leidos_total <= 4:
+        weights = weights * np.array([1.5, 1.0, 0.4])
+
+    weights = weights / weights.sum()
+    return str(rng.choice(values, p=weights))
+
+
+def _generate_ingresos_app_mes(frecuencia: str, bib_config: dict, rng: np.random.Generator) -> int:
+    """Sesiones/logins por mes correlacionadas con frecuencia de apertura."""
+    params = bib_config["field_distributions"]["ingresos_app_mes"]["by_frecuencia"]
+    p = params.get(frecuencia, params["monthly"])
+    raw = rng.normal(p["mean"], p["std"])
+    return int(np.clip(raw, p["min"], p["max"]))
+
+
+def _generate_edad(bib_config: dict, rng: np.random.Generator) -> int:
+    """Edad según distribución demográfica argentina de suscripciones."""
+    brackets = bib_config["field_distributions"]["edad"]["brackets"]
+    weights = np.array([b["weight"] for b in brackets], dtype=float)
+    weights = weights / weights.sum()
+    idx = int(rng.choice(len(brackets), p=weights))
+    lo, hi = brackets[idx]["range"]
+    return int(rng.integers(lo, hi + 1))
+
+
 def _generate_decline_code(
     bib_config: dict, rng: np.random.Generator
 ) -> str:
@@ -268,6 +302,10 @@ def generate(
         autor_favorito = _generate_autor_favorito(bib_config, rng)
         genero_favorito = _generate_genero_favorito(bib_config, rng)
 
+        tier_gasto = _generate_tier_gasto(libros_leidos_total, bib_config, rng)
+        ingresos_app_mes = _generate_ingresos_app_mes(frecuencia_apertura_app, bib_config, rng)
+        edad = _generate_edad(bib_config, rng)
+
         decline_code = _generate_decline_code(bib_config, rng)
         attempt_number = _generate_attempt_number(rng)
         event_date = _generate_event_date(rng)
@@ -295,6 +333,9 @@ def generate(
             "resenas_escritas": int(resenas_escritas),
             "autor_favorito": autor_favorito,
             "genero_favorito": genero_favorito,
+            "tier_gasto": tier_gasto,
+            "ingresos_app_mes": ingresos_app_mes,
+            "edad": edad,
             "decline_code": decline_code,
             "attempt_number": attempt_number,
         })
@@ -309,6 +350,7 @@ def generate(
         "libros_leidos_total", "libros_leidos_ultimos_3_meses", "rating_promedio_dado",
         "frecuencia_apertura_app", "ultimo_acceso_dias", "lista_deseos_activa",
         "resenas_escritas", "autor_favorito", "genero_favorito",
+        "tier_gasto", "ingresos_app_mes", "edad",
         "decline_code", "attempt_number",
     ]
     df = df[column_order]
@@ -335,6 +377,11 @@ def _print_summary(df: pd.DataFrame) -> None:
           f"median: {df['libros_leidos_total'].median():.1f}")
     print(f"  ultimo_acceso_dias — mean: {df['ultimo_acceso_dias'].mean():.1f}, "
           f"median: {df['ultimo_acceso_dias'].median():.1f}")
+    print(f"  tier_gasto — {dict(df['tier_gasto'].value_counts(normalize=True).round(3))}")
+    print(f"  ingresos_app_mes — mean: {df['ingresos_app_mes'].mean():.1f}, "
+          f"median: {df['ingresos_app_mes'].median():.1f}")
+    print(f"  edad — mean: {df['edad'].mean():.1f}, "
+          f"min: {df['edad'].min()}, max: {df['edad'].max()}")
 
 
 if __name__ == "__main__":

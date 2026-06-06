@@ -1,128 +1,203 @@
 {
   "version": "2.0",
   "vertical": "biblioteca_suscripcion",
+  "cluster_method": "rule_based",
+  "note": "Clusters definidos por Gasti. No usar KMeans — implementar como árbol de decisión o if/elif en clustering.py. Evaluar árbol supervisado con estos labels como target.",
+  "required_fields": [
+    "tier_gasto",
+    "ingresos_app_mes",
+    "codigo_error",
+    "edad",
+    "provincia"
+  ],
   "archetypes": [
     {
-      "id": "lector_voraz",
-      "label": "Lector Voraz",
-      "color_tag": "#3B6D11",
-      "bg_tag": "#EAF3DE",
-      "description": "Usuario de alto engagement. Lee mucho, de forma variada y frecuente. La suscripción es parte de su rutina diaria.",
-      "dominant_features": {
-        "libros_leidos_total": "> 30",
-        "libros_leidos_ultimos_3_meses": "> 6",
-        "frecuencia_apertura_app": "daily",
-        "genero_favorito": "variado",
-        "ultimo_acceso_dias": "< 7"
+      "id": "vip_friccion_bancaria",
+      "label": "VIP con Fricción Bancaria",
+      "priority": "MÁXIMA",
+      "priority_color": {
+        "bg": "#FCEBEB",
+        "text": "#A32D2D"
+      },
+      "color": {
+        "bg": "#E6F1FB",
+        "text": "#185FA5"
+      },
+      "description": "Alto valor, app activa. El sistema bancario bloqueó el cobro preventivamente, no hay problema de liquidez.",
+      "filters": {
+        "tier_gasto": [
+          "High"
+        ],
+        "ingresos_app_mes": "> 4",
+        "codigo_error": [
+          "Rechazo por Seguridad",
+          "Supera Límite",
+          "Contactar al Emisor"
+        ]
+      },
+      "demographic_context": "Adultos 30-55 años, concentración AMBA",
+      "pipeline_action": {
+        "channel": "whatsapp_humano",
+        "automation": false,
+        "delay_days": 2,
+        "retry_auto": false,
+        "self_service": false,
+        "grace_period_days": null
       },
       "recovery_signals": {
         "tone": "empático",
-        "hook": "No pierdas tu racha — ya leíste N libros este mes",
-        "channel_priority": [
-          "push",
-          "whatsapp"
-        ],
-        "urgency": "alta",
-        "incentive": false,
-        "compliance_note": "Recordar logros, nunca presionar"
+        "hook": "Hola [nombre], notamos un inconveniente técnico con tu banco. ¿Podemos ayudarte a resolverlo?",
+        "compliance_note": "Contacto humano. No revelar datos del rechazo. Opt-out visible."
       }
     },
     {
-      "id": "lector_fiel",
-      "label": "Lector Fiel",
-      "color_tag": "#185FA5",
-      "bg_tag": "#E6F1FB",
-      "description": "Lee con moderación pero con foco claro. Tiene autor o género preferido definido. Valor de largo plazo.",
-      "dominant_features": {
-        "libros_leidos_total": "10 - 30",
-        "libros_leidos_ultimos_3_meses": "2 - 5",
-        "frecuencia_apertura_app": "weekly",
-        "rating_promedio_dado": "> 3.5",
-        "autor_favorito": "definido"
+      "id": "suscriptor_dormido",
+      "label": "Suscriptor Dormido",
+      "priority": "CRÍTICA",
+      "priority_color": {
+        "bg": "#FAEEDA",
+        "text": "#854F0B"
+      },
+      "color": {
+        "bg": "#F1EFE8",
+        "text": "#444441"
+      },
+      "description": "Valor medio/alto pero inactivo. El fallo de tarjeta es invisible para él. Si vence el agreement, se pierde definitivamente.",
+      "filters": {
+        "tier_gasto": [
+          "Medium",
+          "High"
+        ],
+        "ingresos_app_mes": "<= 1",
+        "codigo_error": [
+          "Fondos Insuficientes",
+          "Tarjeta Expirada"
+        ]
+      },
+      "demographic_context": "Alta presencia en el Interior del país",
+      "pipeline_action": {
+        "channel": "email_editorial",
+        "automation": true,
+        "delay_days": 1,
+        "retry_auto": false,
+        "self_service": false,
+        "grace_period_days": null,
+        "content_strategy": "Mostrar libros destacados del mes según género e historial. Insertar aviso de pago al final, nunca al inicio."
       },
       "recovery_signals": {
         "tone": "informativo",
-        "hook": "Salió un nuevo libro de [autor_favorito] — te está esperando",
-        "channel_priority": [
-          "email",
-          "push"
-        ],
-        "urgency": "media",
-        "incentive": false,
-        "compliance_note": "Mencionar contenido específico, no descuentos"
+        "hook": "Tu próximo libro ya está listo para viajar a [localidad], solucioná tu tarjeta acá para no perdértelo",
+        "compliance_note": "No abrir con mensaje financiero. Contenido editorial primero. Opt-out claro al pie."
       }
     },
     {
-      "id": "lector_casual",
-      "label": "Lector Casual",
-      "color_tag": "#854F0B",
-      "bg_tag": "#FAEEDA",
-      "description": "Baja frecuencia de uso. Lee poco pero no ha cancelado. Posible candidato a churn voluntario si el involuntario no se resuelve rápido.",
-      "dominant_features": {
-        "libros_leidos_total": "< 10",
-        "libros_leidos_ultimos_3_meses": "0 - 2",
-        "frecuencia_apertura_app": "monthly",
-        "ultimo_acceso_dias": "15 - 60"
+      "id": "centennial_digital",
+      "label": "Centennial Digital sin Saldo",
+      "priority": "MEDIA",
+      "priority_color": {
+        "bg": "#EAF3DE",
+        "text": "#3B6D11"
       },
-      "recovery_signals": {
-        "tone": "incentivado",
-        "hook": "Reactivá tu suscripción y elegí tu próximo libro gratis",
-        "channel_priority": [
-          "email",
-          "whatsapp"
-        ],
-        "urgency": "baja",
-        "incentive": true,
-        "compliance_note": "Puede necesitar recordatorio del valor, no solo del pago"
-      }
-    },
-    {
-      "id": "coleccionista",
-      "label": "Coleccionista",
-      "color_tag": "#533AB7",
-      "bg_tag": "#EEEDFE",
-      "description": "Lee poco pero es muy activo en wishlist y reseñas. El valor percibido es la curaduría y la pertenencia, no la lectura en sí.",
-      "dominant_features": {
-        "libros_leidos_total": "< 15",
-        "lista_deseos_activa": true,
-        "resenas_escritas": "> 5",
-        "frecuencia_apertura_app": "weekly",
-        "ultimo_acceso_dias": "< 14"
+      "color": {
+        "bg": "#EEEDFE",
+        "text": "#533AB7"
       },
-      "recovery_signals": {
-        "tone": "empático",
-        "hook": "Tenés N libros en tu lista esperándote — no los pierdas",
-        "channel_priority": [
-          "push",
-          "email"
-        ],
-        "urgency": "media",
-        "incentive": false,
-        "compliance_note": "Apelar a la colección, nunca minimizar el bajo consumo"
-      }
-    },
-    {
-      "id": "inactivo_reciente",
-      "label": "Inactivo Reciente",
-      "color_tag": "#5F5E5A",
-      "bg_tag": "#F1EFE8",
-      "description": "Era activo, dejó de usar la app en los últimos 30-60 días. Señal de riesgo de churn voluntario. Requiere acción rápida.",
-      "dominant_features": {
-        "ultimo_acceso_dias": "30 - 60",
-        "libros_leidos_ultimos_3_meses": "< 2",
-        "frecuencia_apertura_app": "monthly",
-        "rating_promedio_dado": "< 3.0 o ausente"
+      "description": "Joven, ultra-activo en app, usa débito/prepaga (MercadoPago, Ualá). Sin liquidez al momento del cobro — problema temporal.",
+      "filters": {
+        "edad": "<= 25",
+        "ingresos_app_mes": "> 8",
+        "codigo_error": [
+          "Fondos Insuficientes"
+        ]
+      },
+      "demographic_context": "100% mobile. Ignoran el mail.",
+      "pipeline_action": {
+        "channel": "push_whatsapp",
+        "automation": true,
+        "retry_window": "días 1-5 del mes siguiente",
+        "retry_auto": true,
+        "pause_if": "fin de mes",
+        "self_service": true,
+        "payment_method": "alias_cvu"
       },
       "recovery_signals": {
         "tone": "urgente",
-        "hook": "Te extrañamos — ¿todo bien? Tu cuenta sigue activa",
-        "channel_priority": [
-          "whatsapp",
-          "email"
+        "hook": "Renovar con alias/CVU — link directo en el mensaje",
+        "compliance_note": "Push y WhatsApp únicamente. Link a pago alternativo obligatorio."
+      }
+    },
+    {
+      "id": "recurrente_vencido",
+      "label": "Recurrente Vencido",
+      "priority": "BAJA FRICCIÓN",
+      "priority_color": {
+        "bg": "#E1F5EE",
+        "text": "#0F6E56"
+      },
+      "color": {
+        "bg": "#FAEEDA",
+        "text": "#854F0B"
+      },
+      "description": "Cliente tradicional estable. Tarjeta vencida — el plástico llegó a su fecha. Bajo riesgo de abandono voluntario.",
+      "filters": {
+        "tier_gasto": [
+          "Medium"
         ],
-        "urgency": "muy alta",
-        "incentive": true,
-        "compliance_note": "No asumir causa del abandono. Opt-out visible siempre."
+        "ingresos_app_mes": "2 - 7",
+        "codigo_error": [
+          "Tarjeta Expirada",
+          "Fecha de Vencimiento Inválida"
+        ]
+      },
+      "demographic_context": "Rango etario amplio, comportamiento predecible",
+      "pipeline_action": {
+        "channel": "email_selfservice",
+        "automation": true,
+        "delay_days": 0,
+        "retry_auto": false,
+        "self_service": true,
+        "grace_period_days": 7,
+        "touchpoints": 1
+      },
+      "recovery_signals": {
+        "tone": "informativo",
+        "hook": "Tu tarjeta venció — actualizala en 7 días para no interrumpir tu suscripción",
+        "compliance_note": "Un único contacto. Botón directo a autogestión. Sin reintentos de cobro."
+      }
+    },
+    {
+      "id": "ghost",
+      "label": "Suscripción Fantasma",
+      "priority": "BAJA",
+      "priority_color": {
+        "bg": "#F1EFE8",
+        "text": "#5F5E5A"
+      },
+      "color": {
+        "bg": "#F1EFE8",
+        "text": "#5F5E5A"
+      },
+      "description": "Tier bajo, entró por promo, abandonó casi desde el inicio. El costo operativo de recuperación supera el LTV.",
+      "filters": {
+        "tier_gasto": [
+          "Low"
+        ],
+        "ingresos_app_mes": "<= 2",
+        "codigo_error": "cualquiera"
+      },
+      "demographic_context": "Usuarios transaccionales, bajo engagement",
+      "pipeline_action": {
+        "channel": "email_automatico",
+        "automation": true,
+        "retry_auto": false,
+        "touchpoints": 1,
+        "on_agreement_expiry": "dar_de_baja_automaticamente",
+        "human_intervention": false
+      },
+      "recovery_signals": {
+        "tone": "informativo",
+        "hook": "Mail genérico único. Sin personalización costosa.",
+        "compliance_note": "Alta automática al vencer agreement. Log del evento obligatorio."
       }
     }
   ]

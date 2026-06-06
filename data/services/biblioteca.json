@@ -138,6 +138,28 @@
     "43": 0.01,
     "14": 0.01
   },
+  "field_distributions": {
+    "tier_gasto": {
+      "values": ["Low", "Medium", "High"],
+      "weights": [0.45, 0.40, 0.15]
+    },
+    "ingresos_app_mes": {
+      "by_frecuencia": {
+        "daily":   {"mean": 22, "std": 4, "min": 8,  "max": 30},
+        "weekly":  {"mean": 6,  "std": 2, "min": 1,  "max": 12},
+        "monthly": {"mean": 1,  "std": 0.5, "min": 0, "max": 3}
+      }
+    },
+    "edad": {
+      "brackets": [
+        {"range": [18, 25], "weight": 0.20},
+        {"range": [26, 35], "weight": 0.30},
+        {"range": [36, 45], "weight": 0.25},
+        {"range": [46, 55], "weight": 0.15},
+        {"range": [56, 65], "weight": 0.10}
+      ]
+    }
+  },
   "signup_defaults": {
     "country": "Argentina",
     "autores_populares": ["Jorge Luis Borges", "Julio Cortázar", "Haroldo Conti", "Ariel Magnus", "Marisa Silver", "Claudia Piñeiro"],
