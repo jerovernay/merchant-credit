@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retenelo — Pitch</title>
+<style>
+  :root{
+    --bg:#0c1021;
+    --bg2:#141a35;
+    --ink:#f4f6fb;
+    --muted:#9aa6c7;
+    --accent:#36e0a4;      /* verde recuperación */
+    --accent2:#5b8cff;     /* azul confianza */
+    --danger:#ff6b6b;
+    --card:#1a2142;
+    --line:#2a3358;
+    --radius:18px;
+    --maxw:1120px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    background:radial-gradient(1200px 800px at 70% -10%, #1b2450 0%, var(--bg) 55%);
+    color:var(--ink);
+    overflow:hidden;
+  }
+
+  /* ---- Slide container ---- */
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    padding:6vh 7vw;
+    flex-direction:column;
+    justify-content:center;
+    animation:fade .45s ease;
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .inner{max-width:var(--maxw);width:100%;margin:0 auto}
+
+  /* ---- Typography ---- */
+  .kicker{
+    color:var(--accent);
+    font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    font-size:.82rem;margin-bottom:18px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .kicker::before{content:"";width:34px;height:2px;background:var(--accent);display:inline-block}
+  h1{font-size:clamp(2.4rem,6vw,5rem);line-height:1.02;letter-spacing:-.02em;font-weight:800}
+  h2{font-size:clamp(1.8rem,3.6vw,3rem);line-height:1.08;letter-spacing:-.01em;font-weight:800;margin-bottom:26px}
+  h2 .hl{color:var(--accent)}
+  p.lead{font-size:clamp(1.05rem,1.7vw,1.5rem);color:var(--muted);line-height:1.55;max-width:60ch}
+  .big{font-size:clamp(3rem,9vw,7rem);font-weight:800;line-height:1;letter-spacing:-.03em}
+  .accent{color:var(--accent)}
+  .accent2{color:var(--accent2)}
+  .danger{color:var(--danger)}
+  strong{color:var(--ink);font-weight:700}
+
+  /* ---- Title slide ---- */
+  .logo{font-size:clamp(3.6rem,11vw,8rem);font-weight:800;letter-spacing:-.04em}
+  .logo .dot{color:var(--accent)}
+  .tagline{margin-top:22px;font-size:clamp(1.1rem,2vw,1.7rem);color:var(--muted);max-width:50ch}
+  .pill{
+    display:inline-block;margin-top:34px;padding:9px 18px;border:1px solid var(--line);
+    border-radius:999px;color:var(--accent);font-weight:600;font-size:.95rem;background:rgba(54,224,164,.07)
+  }
+
+  /* ---- Cards / grids ---- */
+  .grid{display:grid;gap:18px;margin-top:8px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card{
+    background:linear-gradient(180deg,var(--card),#161d3c);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 24px;
+  }
+  .card .num{font-size:1.6rem;font-weight:800;color:var(--accent);margin-bottom:12px}
+  .card h3{font-size:1.2rem;margin-bottom:8px;font-weight:700}
+  .card p{color:var(--muted);font-size:1rem;line-height:1.5}
+
+  /* ---- Table (diferenciación) ---- */
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:1.02rem}
+  th,td{text-align:left;padding:16px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:.82rem;letter-spacing:.08em;text-transform:uppercase}
+  td .name{font-weight:700}
+  td .gap{color:var(--muted);font-size:.95rem}
+  .edge{color:var(--accent);font-weight:600}
+
+  /* ---- Stat row ---- */
+  .stats{display:flex;gap:46px;flex-wrap:wrap;margin-top:10px}
+  .stat .v{font-size:clamp(2.4rem,5vw,4rem);font-weight:800;letter-spacing:-.02em}
+  .stat .l{color:var(--muted);font-size:1rem;margin-top:4px;max-width:22ch}
+
+  /* ---- Flow (solución) ---- */
+  .flow{display:flex;align-items:stretch;gap:14px;margin-top:10px;flex-wrap:wrap}
+  .flow .step{flex:1;min-width:200px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .flow .step .n{color:var(--accent);font-weight:800;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase}
+  .flow .step h4{margin:8px 0 6px;font-size:1.1rem}
+  .flow .step p{color:var(--muted);font-size:.95rem;line-height:1.45}
+  .anchor{margin-top:26px;padding:18px 22px;border-left:3px solid var(--accent);background:rgba(54,224,164,.06);border-radius:0 12px 12px 0;font-size:1.15rem}
+
+  /* ---- Clusters -> ofertas ---- */
+  .cl{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
+  .cl .item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .cl .tag{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2);margin-bottom:4px}
+  .cl .name{font-size:1.2rem;font-weight:800}
+  .cl .beh{color:var(--muted);font-size:.9rem;margin:2px 0 12px}
+  .cl .row{display:flex;gap:8px;align-items:baseline;font-size:.98rem;line-height:1.4;margin-top:6px}
+  .cl .row .arr{color:var(--accent);font-weight:800;flex:none}
+  .cl .row .arr2{color:var(--accent2);font-weight:800;flex:none}
+  .cl .row span{color:var(--ink)}
+  .cl .row em{color:var(--muted);font-style:normal}
+
+  /* ---- Compliance ---- */
+  .comp{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
+  .comp .c{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .comp .c .law{color:var(--accent);font-weight:800;font-size:.95rem}
+  .comp .c h4{margin:6px 0 6px;font-size:1.12rem}
+  .comp .c p{color:var(--muted);font-size:.96rem;line-height:1.45}
+
+  /* ---- Criterios chips ---- */
+  .chips{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+  .chip{padding:10px 16px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:.92rem}
+  .chip b{color:var(--accent)}
+
+  /* ---- Closing ---- */
+  .closer{font-size:clamp(1.6rem,3.4vw,2.8rem);font-weight:800;line-height:1.2;letter-spacing:-.01em}
+  .closer .v{color:var(--muted);font-weight:600}
+  .closer .v2{color:var(--accent)}
+
+  /* ---- Team ---- */
+  .team{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:10px}
+  .member{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .member .role{color:var(--accent);font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase}
+  .member .who{font-size:1.35rem;font-weight:800;margin:10px 0 6px}
+  .member p{color:var(--muted);font-size:.98rem;line-height:1.45}
+
+  /* ---- Footer / nav ---- */
+  .hud{position:fixed;bottom:22px;left:0;right:0;display:flex;justify-content:space-between;
+       align-items:center;padding:0 7vw;color:var(--muted);font-size:.85rem;pointer-events:none}
+  .hud .brand{font-weight:700;color:var(--ink)}
+  .hud .brand .dot{color:var(--accent)}
+  .progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width .35s ease;z-index:10}
+  .nav{position:fixed;bottom:18px;right:7vw;display:flex;gap:8px;pointer-events:auto;z-index:11}
+  .nav button{background:var(--card);border:1px solid var(--line);color:var(--ink);width:40px;height:40px;
+              border-radius:10px;font-size:1.1rem;cursor:pointer;transition:.2s}
+  .nav button:hover{border-color:var(--accent);color:var(--accent)}
+  .hint{position:fixed;top:18px;right:7vw;color:var(--muted);font-size:.78rem}
+
+  /* ---- Salvavidas (la O de Retenelo) ---- */
+  .logo .ring{
+    display:inline-block;width:.84em;height:.84em;border-radius:50%;
+    vertical-align:-.07em;margin:0 .005em;
+    background:conic-gradient(from 45deg,
+      var(--danger) 0 90deg,#fff 90deg 180deg,
+      var(--danger) 180deg 270deg,#fff 270deg 360deg);
+    -webkit-mask:radial-gradient(circle,transparent 0 33%,#000 34% 100%);
+            mask:radial-gradient(circle,transparent 0 33%,#000 34% 100%);
+  }
+
+  /* ---- Magnitud (números con aire) ---- */
+  .mag{display:flex;gap:60px;flex-wrap:wrap;margin-top:18px}
+  .mag .m .v{font-size:clamp(3rem,7vw,5.4rem);font-weight:800;letter-spacing:-.03em;line-height:1}
+  .mag .m .l{color:var(--muted);font-size:1.05rem;margin-top:10px;max-width:18ch}
+
+  /* ---- Mensajes por cluster (chat) ---- */
+  .msgs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
+  .msg{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+  .msg .who{display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent2)}
+  .msg .bubble{background:rgba(54,224,164,.07);border:1px solid rgba(54,224,164,.22);border-radius:4px 14px 14px 14px;padding:13px 15px;font-size:1.0rem;line-height:1.45;color:var(--ink)}
+  .msg .bubble b{color:var(--accent);font-weight:700}
+  .msg .meta{display:flex;align-items:center;gap:8px;font-size:.84rem;color:var(--muted);flex-wrap:wrap}
+  .msg .meta .code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:.8rem}
+  .msg .meta .arr{color:var(--accent);font-weight:800}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · PROBLEMA -->
+  <section class="slide active">
+    <div class="inner">
+      <div class="kicker">El problema</div>
+      <h2><span class="hl">1 de cada 3 cancelaciones</span> no es una decisión.<br>Es un pago que falló.</h2>
+      <p class="lead">El cliente <strong>quería quedarse</strong>. La tarjeta no tenía fondos ese día,
+        venció o el banco se cayó — y el negocio lo pierde igual.</p>
+    </div>
+  </section>
+
+  <!-- 1b · MAGNITUD -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">La magnitud</div>
+      <h2>Plata que ya estaba ganada, y se escurre.</h2>
+      <div class="mag">
+        <div class="m"><div class="v danger">20–40%</div><div class="l">del churn total es involuntario</div></div>
+        <div class="m"><div class="v">~8%</div><div class="l">de los pagos falla (hasta 15% en algunos rubros)</div></div>
+        <div class="m"><div class="v accent">60–80%</div><div class="l">es recuperable con el sistema correcto</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · QUIÉNES SOMOS -->
+  <section class="slide">
+    <div class="inner">
+      <div class="logo">Retenel<span class="ring" role="img" aria-label="o"></span><span class="dot">.</span></div>
+      <div class="tagline">Somos el <strong class="accent">salvavidas de tus clientes</strong>:
+        el servicio que recupera los pagos caídos y aumenta tu retención.</div>
+      <span class="pill">Recuperación de churn involuntario · B2B SaaS · Argentina</span>
+    </div>
+  </section>
+
+  <!-- 3 · SOLUCIÓN -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">La solución</div>
+      <h2>La <span class="hl">capa de rescate</span> — se activa cuando el cobro ya falló.</h2>
+      <div class="flow">
+        <div class="step"><div class="n">01 · Quién</div><h4>Clustering por comportamiento</h4><p>Qué consume, con qué frecuencia, hace cuánto. Segmento real, no demográfico.</p></div>
+        <div class="step"><div class="n">02 · Qué hacer</div><h4>Código + timing + contexto</h4><p>La acción surge de combinar el <strong>código de rechazo</strong>, el <strong>momento óptimo</strong> (atado al calendario de sueldos argentino) y el <strong>contexto</strong> del usuario.</p></div>
+        <div class="step"><div class="n">03 · Cómo</div><h4>Oferta personalizada</h4><p>Un incentivo concreto elegido de un catálogo verificado: algo que le interesa de verdad, según lo que ya consumió.</p></div>
+      </div>
+      <div class="anchor">El <strong>código</strong> manda los números y los hechos. La <strong>IA</strong> solo elige el lenguaje.
+        Por diseño, <span class="accent">no puede alucinar.</span></div>
+    </div>
+  </section>
+
+  <!-- 4 · CLUSTERS -> OFERTAS -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">El motor en acción</div>
+      <h2>Mismo pago caído, <span class="hl">distinta jugada</span> según quién es.</h2>
+      <div class="msgs">
+        <div class="msg">
+          <div class="who">📚 Lector voraz</div>
+          <div class="bubble">Solo para vos, Martín: te regalamos <b>El Aleph</b>. Para activarlo, confirmá tu medio de pago.</div>
+          <div class="meta"><span class="code">51 · sin fondos</span><span class="arr">→</span> Reintento tras su día de cobro</div>
+        </div>
+        <div class="msg">
+          <div class="who">🎯 Lector fiel</div>
+          <div class="bubble">No te lo pierdas, Sofía — para vos, que seguís a Claudia Piñeiro: te regalamos <b>Elena sabe</b>. Para activarlo, confirmá tu medio de pago.</div>
+          <div class="meta"><span class="code">65 · límite</span><span class="arr">→</span> Reintento tras la fecha de resumen</div>
+        </div>
+        <div class="msg">
+          <div class="who">🔖 Coleccionista</div>
+          <div class="bubble">No te lo pierdas, Diego: sumá a tu colección <b>el acceso anticipado al próximo lanzamiento de Eterna Cadencia</b>. Para activarlo, confirmá los datos de tu tarjeta.</div>
+          <div class="meta"><span class="code">54 · vencida</span><span class="arr">→</span> Pide actualizar la tarjeta</div>
+        </div>
+        <div class="msg">
+          <div class="who">💤 Inactivo reciente</div>
+          <div class="bubble">Tenemos algo especial para vos, Caro: te reservamos un regalo, <b>los ensayos inéditos de Dolina</b>. Para activarlo, sumá un medio de pago.</div>
+          <div class="meta"><span class="code">41 · robada</span><span class="arr">→</span> No reintenta: pide otro medio</div>
+        </div>
+      </div>
+      <div class="anchor">Mismo gancho positivo. El <strong>cierre cambia solo</strong> según el código de rechazo —
+        nunca decimos "algo falló".</div>
+    </div>
+  </section>
+
+  <!-- 5 · DIFERENCIACIÓN -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Diferenciación</div>
+      <h2>Lo que existe no resuelve esto.</h2>
+      <table>
+        <thead><tr><th>Competidor</th><th>Su límite</th><th>Nuestra ventaja</th></tr></thead>
+        <tbody>
+          <tr><td><span class="name">Rebill</span> <span class="gap">(YC)</span></td><td class="gap">Te vende el billing entero y cobra exista o no recuperación</td><td class="edge">Pay-on-recovery · nos acoplamos a tu cobro</td></tr>
+          <tr><td><span class="name">Debi</span></td><td class="gap">~32% de recuperación, reintentos sin contexto</td><td class="edge">Clustering + contexto de servicio</td></tr>
+          <tr><td><span class="name">Stripe / Paddle</span></td><td class="gap">Sin adquirencia argentina, sin ARS, sin WhatsApp</td><td class="edge">Local-first</td></tr>
+          <tr><td><span class="name">Scripts in-house</span></td><td class="gap">Reintentos ingenuos, sin compliance</td><td class="edge">Timing ML + tope legal por diseño</td></tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin-top:18px">No competimos con tu billing: <strong>nos acoplamos a él.</strong></p>
+    </div>
+  </section>
+
+  <!-- 6 · MODELO + NÚMERO -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Modelo de negocio · Lógica financiera</div>
+      <h2>Cobramos <span class="hl">solo sobre lo que recuperamos.</span></h2>
+      <div class="grid g3">
+        <div class="card"><div class="num">10–15%</div><h3>Comisión</h3><p>Solo sobre revenue recuperado. Cero costo inicial, cero riesgo: si no recuperamos, no cobrás.</p></div>
+        <div class="card"><div class="num">≤ 30%</div><h3>Guardrail</h3><p>Nunca gastamos en un incentivo más del 30% del valor que recuperamos. La unidad económica cierra desde el primer cliente.</p></div>
+        <div class="card"><div class="num">30% → <span class="accent">45–50%</span></div><h3>El delta</h3><p>El dunning a horario fijo recupera ~30%; recuperar <strong>según el tipo de falla</strong> llega a 45–50%. Esa diferencia es margen directo.</p></div>
+      </div>
+      <p class="lead" style="margin-top:20px">Costo marginal por evento: una llamada de IA de <strong>fracciones de centavo.</strong></p>
+    </div>
+  </section>
+
+  <!-- 7 · COMPLIANCE -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Viabilidad regulatoria</div>
+      <h2>El compliance está en la <span class="hl">arquitectura</span>, no parchado después.</h2>
+      <div class="comp">
+        <div class="c"><div class="law">Ley 25.326</div><h4>Datos personales</h4><p>Cero datos sensibles en los mensajes, opt-out fácil y obligatorio. La IA elige de un catálogo verificado: no expone información del usuario.</p></div>
+        <div class="c"><div class="law">BCRA / Payway</div><h4>Tope de reintentos</h4><p>Máximo 15 reintentos por transacción en 30 días, respetado por diseño. El sistema lo cuenta y frena solo.</p></div>
+        <div class="c"><div class="law">Defensa del Consumidor</div><h4>Sin engaños</h4><p>Sin framing engañoso ni urgencia falsa. Ofrecemos valor real, no presión.</p></div>
+        <div class="c"><div class="law">Trazabilidad</div><h4>Todo logueado</h4><p>Cada reintento con timestamp. Auditable de punta a punta — el costo de compliance es casi cero.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · REPLICABILIDAD -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Escala · Replicabilidad de dominio</div>
+      <h2>El motor <span class="hl">no sabe de libros.</span></h2>
+      <p class="lead">Un pago que falla es un pago que falla — gimnasio, SaaS, streaming, seguro, delivery.
+        El <strong>80% del sistema se reusa tal cual.</strong></p>
+      <div class="grid g2" style="margin-top:24px">
+        <div class="card"><div class="num accent2">80%</div><h3>Núcleo agnóstico del rubro</h3><p>Clustering · códigos de rechazo · calendario de sueldos · compliance · anti-alucinación.</p></div>
+        <div class="card"><div class="num">20%</div><h3>Capa por vertical</h3><p>Solo cambia el catálogo de incentivos: un libro, una clase, un mes de gimnasio, un envío gratis.</p></div>
+      </div>
+      <p class="lead" style="margin-top:22px">Empezamos por suscripciones de libros porque es nuestro
+        <strong class="accent">piso, no nuestro techo.</strong></p>
+    </div>
+  </section>
+
+  <!-- 8b · CASO RAPPI -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Replicabilidad · El mismo motor en otro rubro</div>
+      <h2>Cambialo a <span class="hl">delivery</span> y sigue funcionando.</h2>
+      <div class="msgs">
+        <div class="msg">
+          <div class="who">🛵 Pedís seguido</div>
+          <div class="bubble">Solo para vos, Juli: tus próximos <b>3 envíos sin cargo</b> en tu hamburguesería de siempre. Para activarlo, confirmá tu medio de pago.</div>
+          <div class="meta"><span class="code">51 · sin fondos</span><span class="arr">→</span> Reintento tras su día de cobro</div>
+        </div>
+        <div class="msg">
+          <div class="who">😴 Hace rato no pedís</div>
+          <div class="bubble">Tenemos algo para vos, Tomás: <b>30% en tu próximo pedido de sushi</b>. Para activarlo, confirmá los datos de tu tarjeta.</div>
+          <div class="meta"><span class="code">54 · vencida</span><span class="arr">→</span> Pide actualizar la tarjeta</div>
+        </div>
+      </div>
+      <div class="anchor">Solo cambió el <strong>catálogo de incentivos</strong>. El motor —clustering, códigos,
+        timing y compliance— es <span class="accent">exactamente el mismo.</span></div>
+    </div>
+  </section>
+
+  <!-- 9 · EQUIPO -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">El equipo</div>
+      <h2>Quiénes lo construyen.</h2>
+      <div class="team">
+        <div class="member"><div class="role">Motor & IA</div><div class="who">Jero</div><p>Ciencia de Datos</p></div>
+        <div class="member"><div class="role">Recuperación</div><div class="who">Gasti</div><p>Ciencia de Datos</p></div>
+        <div class="member"><div class="role">Dashboard B2B</div><div class="who">Nico</div><p>Ciencias de la Computación</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · CIERRE -->
+  <section class="slide">
+    <div class="inner">
+      <div class="kicker">Cierre</div>
+      <div class="closer">
+        Hoy, la mitad del churn involuntario se pierde porque nadie lo trabaja con contexto.<br><br>
+        <span class="v2">Recuperamos hasta la mitad de eso</span> <span class="v">— sin que el cliente arriesgue un peso.</span>
+      </div>
+      <div style="margin-top:40px;font-size:clamp(1.3rem,2.6vw,2rem);font-weight:800;line-height:1.35">
+        <span style="color:var(--muted)">Tu sistema de cobro y Retenelo van juntos como</span>
+        <span class="accent">el backup y tus datos</span><span style="color:var(--muted)">:</span><br>
+        <span style="color:var(--muted)">nadie piensa en el backup… hasta que lo necesita.</span>
+      </div>
+      <div class="chips">
+        <div class="chip"><b>✓</b> Viabilidad regulatoria</div>
+        <div class="chip"><b>✓</b> Lógica financiera</div>
+        <div class="chip"><b>✓</b> Innovación</div>
+        <div class="chip"><b>✓</b> Producto andando</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- HUD -->
+<div class="hint">← → para navegar · F pantalla completa</div>
+<div class="hud">
+  <div class="brand">Retenelo<span class="dot">.</span></div>
+  <div><span id="counter">1 / 10</span></div>
+</div>
+<div class="nav">
+  <button id="prev" aria-label="Anterior">‹</button>
+  <button id="next" aria-label="Siguiente">›</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let i = 0;
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length-1, n));
+    slides.forEach((s,idx)=>s.classList.toggle('active', idx===i));
+    progress.style.width = ((i+1)/slides.length*100)+'%';
+    counter.textContent = (i+1)+' / '+slides.length;
+  }
+  function next(){show(i+1)}
+  function prev(){show(i-1)}
+
+  document.getElementById('next').onclick = next;
+  document.getElementById('prev').onclick = prev;
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){next();e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){prev();e.preventDefault();}
+    else if(e.key==='Home'){show(0);}
+    else if(e.key==='End'){show(slides.length-1);}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen();}
+    }
+  });
+  // swipe (touch)
+  let x0=null;
+  document.addEventListener('touchstart',e=>x0=e.touches[0].clientX);
+  document.addEventListener('touchend',e=>{
+    if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>50){dx<0?next():prev();}x0=null;
+  });
+  show(0);
+</script>
+</body>
+</html>

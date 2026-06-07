@@ -1,0 +1,173 @@
+{
+  "clusters": {
+    "lector_voraz": {
+      "nombre": "Lector Voraz",
+      "icono": "📚",
+      "descripcion": "Lee 5 o más libros por mes, abre la app todos los días. Explora géneros variados y está siempre al tanto de novedades editoriales.",
+      "caracteristicas": {
+        "libros_mes": "5+",
+        "frecuencia_app": "Diaria",
+        "patron": "Alta exploración de catálogo, géneros variados"
+      },
+      "tono_oferta": "entusiasta",
+      "noticias_relevantes": [
+        {
+          "id": "n04",
+          "titulo": "Premio Clarín Novela 2025: los 10 finalistas disponibles en exclusiva para suscriptores digitales antes del fallo",
+          "fuente": "Clarín"
+        },
+        {
+          "id": "n05",
+          "titulo": "Samanta Schweblin y la ciencia ficción argentina: por qué su obra es la más subrayada en apps de lectura este año",
+          "fuente": "La Nación"
+        },
+        {
+          "id": "n06",
+          "titulo": "Maratón de lectura digital: el 34% de los suscriptores argentinos leyó más de 4 libros en mayo según datos de plataformas locales",
+          "fuente": "Infobae"
+        },
+        {
+          "id": "n14",
+          "titulo": "Sigilo Editorial incorpora toda su colección de autor a Bukku: 47 títulos de narrativa contemporánea desde junio",
+          "fuente": "Página 12"
+        }
+      ]
+    },
+
+    "lector_fiel": {
+      "nombre": "Lector Fiel",
+      "icono": "🎯",
+      "descripcion": "Lee 2 a 3 libros por mes con foco en un género o autor favorito. Alta lealtad a su nicho, baja exploración fuera de él.",
+      "caracteristicas": {
+        "libros_mes": "2-3",
+        "frecuencia_app": "Semanal",
+        "patron": "Género o autor fijo, alta fidelidad"
+      },
+      "tono_oferta": "cercano",
+      "noticias_relevantes": [
+        {
+          "id": "n01",
+          "titulo": "Claudia Piñeiro encabeza las ventas de mayo: 'Elena Sabe' supera las 50.000 copias digitales en plataformas de suscripción",
+          "fuente": "Infobae"
+        },
+        {
+          "id": "n02",
+          "titulo": "El auge del noir rioplatense: cómo el policial argentino conquistó las listas de más leídos en 2025",
+          "fuente": "Revista Ñ"
+        },
+        {
+          "id": "n03",
+          "titulo": "Guillermo Martínez lanza nueva novela: la preventa en Bukku agotó los primeros 500 cupos en 48 horas",
+          "fuente": "La Nación"
+        },
+        {
+          "id": "n10",
+          "titulo": "Lucía Puenzo adapta su novela al formato episódico: cada capítulo disponible semanalmente para suscriptores",
+          "fuente": "Infobae"
+        }
+      ]
+    },
+
+    "lector_casual": {
+      "nombre": "Lector Casual",
+      "icono": "☕",
+      "descripcion": "Lee 1 libro por mes o menos, abre la app cuando tiene tiempo. Valora la flexibilidad y el precio más que el volumen.",
+      "caracteristicas": {
+        "libros_mes": "0-1",
+        "frecuencia_app": "Mensual",
+        "patron": "Uso esporádico, sensible al precio"
+      },
+      "tono_oferta": "empatico",
+      "noticias_relevantes": [
+        {
+          "id": "n11",
+          "titulo": "Suscripciones de libros digitales resisten la inflación: el precio promedio subió 40% menos que el libro físico en 2025",
+          "fuente": "El Economista"
+        },
+        {
+          "id": "n09",
+          "titulo": "Boom del romance en español: las editoriales independientes argentinas triplicaron su catálogo digital en el último año",
+          "fuente": "Clarín"
+        },
+        {
+          "id": "n18",
+          "titulo": "Crecen las suscripciones familiares: el formato 'adulto + perfil junior' es el de mayor retención en plataformas argentinas",
+          "fuente": "La Nación"
+        },
+        {
+          "id": "n20",
+          "titulo": "La Noche de las Librerías se digitaliza: las plataformas de suscripción ofrecen acceso gratuito de 24 horas para atraer nuevos lectores",
+          "fuente": "Página 12"
+        }
+      ]
+    },
+
+    "coleccionista": {
+      "nombre": "Coleccionista",
+      "icono": "🔖",
+      "descripcion": "Agrega muchos libros a su lista de deseos pero lee poco. Le importa tener acceso al catálogo más que consumirlo.",
+      "caracteristicas": {
+        "libros_mes": "0-1",
+        "frecuencia_app": "Semanal",
+        "patron": "Lista de deseos alta, lectura baja"
+      },
+      "tono_oferta": "urgente_suave",
+      "noticias_relevantes": [
+        {
+          "id": "n08",
+          "titulo": "El ensayo político es el género más marcado con 'deseo leer' en plataformas argentinas de suscripción, según reporte 2025",
+          "fuente": "Infobae"
+        },
+        {
+          "id": "n13",
+          "titulo": "Eterna Cadencia suma 200 títulos a su catálogo digital: clásicos del sello disponibles por primera vez en suscripción",
+          "fuente": "Página 12"
+        },
+        {
+          "id": "n15",
+          "titulo": "Feria del Libro Frankfurt 2025: las 15 novelas extranjeras más compradas por editoriales argentinas para traducir este año",
+          "fuente": "La Nación"
+        },
+        {
+          "id": "n19",
+          "titulo": "Clubes de lectura virtuales: Leamos y Bukku lanzan función de lectura grupal con foros moderados por autores argentinos",
+          "fuente": "Clarín"
+        }
+      ]
+    },
+
+    "inactivo_reciente": {
+      "nombre": "Inactivo Reciente",
+      "icono": "💤",
+      "descripcion": "Era usuario activo pero no abre la app hace más de 30 días. Alto riesgo de churn. Necesita una razón concreta para volver.",
+      "caracteristicas": {
+        "libros_mes": "Variable (antes activo)",
+        "frecuencia_app": "Sin acceso reciente",
+        "patron": "Drop-off súbito en los últimos 30-60 días"
+      },
+      "tono_oferta": "empatico",
+      "noticias_relevantes": [
+        {
+          "id": "n16",
+          "titulo": "Estudio: los lectores que pausan su suscripción más de 30 días tienen 3 veces más chances de no retomar si no reciben una recomendación personalizada",
+          "fuente": "Leamos Blog"
+        },
+        {
+          "id": "n17",
+          "titulo": "El 'modo vacaciones' de las apps de lectura: cómo las plataformas retienen usuarios en julio con catálogos de verano curados",
+          "fuente": "Infobae"
+        },
+        {
+          "id": "n12",
+          "titulo": "El dólar no frena la lectura: las plataformas de suscripción literaria crecieron 28% en usuarios activos en el primer trimestre",
+          "fuente": "El Economista"
+        },
+        {
+          "id": "n07",
+          "titulo": "Alejandro Dolina publica sus ensayos inéditos: primer título en formato digital exclusivo para suscripciones mensuales",
+          "fuente": "Página 12"
+        }
+      ]
+    }
+  }
+}

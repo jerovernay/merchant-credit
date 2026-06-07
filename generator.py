@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -21,6 +23,19 @@ import numpy as np
 import pandas as pd
 
 import config
+
+# Tope de libros del catálogo que registramos por usuario. El historial es "lo que
+# tenemos trackeado", no necesariamente todo lo que leyó en su vida (libros_leidos_total).
+HISTORIAL_MAX = 12
+# Vida media (días) para ponderar la recencia al derivar el gusto. Lecturas más
+# recientes pesan más; el gusto migra con el tiempo.
+RECENCIA_HALFLIFE_DIAS = 180
+# Peso implícito de un libro leído pero sin rating: señal positiva débil, no neutra fuerte.
+RATING_IMPLICITO = 3.0
+# Probabilidad de que un libro leído tenga rating explícito (mucha gente no puntúa).
+PROB_RATING_EXPLICITO = 0.60
+# Probabilidad de que el usuario tenga un autor dominante (concentración de gusto).
+PROB_LECTURA_AUTOR_PRIMARIO = 0.65
 
 
 def _load_biblioteca_config() -> dict:
@@ -33,6 +48,12 @@ def _load_decline_codes() -> dict:
     """Carga códigos de rechazo desde decline_codes.json."""
     with open(config.DECLINE_CODES_PATH, encoding="utf-8") as f:
         return json.load(f)["codes"]
+
+
+def _load_catalogo() -> dict:
+    """Carga el inventario verificado (libros + eventos) desde data/catalogo.json."""
+    with open(config.CATALOGO_PATH, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _generate_firstname(rng: np.random.Generator) -> str:
@@ -172,20 +193,84 @@ def _generate_resenas_escritas(rng: np.random.Generator) -> int:
     return int(np.clip(rng.poisson(3), 0, 50))
 
 
-def _generate_autor_favorito(bib_config: dict, rng: np.random.Generator) -> str | None:
-    """Autor favorito si existe."""
-    if rng.random() < 0.65:
-        autores = bib_config.get("signup_defaults", {}).get("autores_populares", ["Borges"])
-        return str(rng.choice(autores))
-    return None
+def _generate_historial_libros(
+    n_hist: int,
+    libros_por_autor: dict[str, list[dict]],
+    todos_los_libros: list[dict],
+    today: date,
+    rng: np.random.Generator,
+) -> list[dict]:
+    """Construye el historial de lectura de un usuario desde el catálogo.
+
+    Modela concentración de gusto: con alta probabilidad la mayoría de las lecturas
+    son de un mismo autor "primario", con algo de dispersión. Cada lectura puede
+    tener rating explícito o no (mucha gente lee y no puntúa). Devuelve una lista de
+    dicts con titulo, autor, genero, rating (float|None) y fecha_lectura (ISO).
+    """
+    if n_hist <= 0 or not todos_los_libros:
+        return []
+
+    autores = list(libros_por_autor.keys())
+    autor_primario = str(rng.choice(autores))
+    usados: set[str] = set()
+    historial: list[dict] = []
+
+    while len(historial) < n_hist and len(usados) < len(todos_los_libros):
+        usar_primario = rng.random() < PROB_LECTURA_AUTOR_PRIMARIO
+        if usar_primario:
+            pool = [b for b in libros_por_autor[autor_primario] if b["id"] not in usados]
+        else:
+            pool = []
+        if not pool:  # autor primario agotado o lectura dispersa
+            pool = [b for b in todos_los_libros if b["id"] not in usados]
+        if not pool:
+            break
+
+        libro = pool[int(rng.integers(0, len(pool)))]
+        usados.add(libro["id"])
+
+        if rng.random() < PROB_RATING_EXPLICITO:
+            rating = round(float(np.clip(rng.beta(5, 2) * 5, 1, 5)), 1)
+        else:
+            rating = None
+
+        dias_atras = int(np.clip(rng.exponential(120), 1, 730))
+        fecha_lectura = (today - timedelta(days=dias_atras)).isoformat()
+
+        historial.append({
+            "titulo": libro["titulo"],
+            "autor": libro["autor"],
+            "genero": libro["genero"],
+            "rating": rating,
+            "fecha_lectura": fecha_lectura,
+        })
+
+    return historial
 
 
-def _generate_genero_favorito(bib_config: dict, rng: np.random.Generator) -> str | None:
-    """Género favorito si existe."""
-    if rng.random() < 0.70:
-        generos = bib_config.get("signup_defaults", {}).get("generos_populares", ["Ficción"])
-        return str(rng.choice(generos))
-    return None
+def _derivar_gustos(historial: list[dict], today: date) -> tuple[str | None, str | None]:
+    """Deriva autor y género favoritos del historial, ponderando rating + recencia.
+
+    Peso de cada lectura = rating (o RATING_IMPLICITO si no puntuó) * decaimiento por
+    recencia. El gusto es evidence-based: emerge de lo que el usuario realmente leyó y
+    valoró, no de un campo autodeclarado. Sin historial -> (None, None) = cold start.
+    """
+    if not historial:
+        return None, None
+
+    score_autor: dict[str, float] = defaultdict(float)
+    score_genero: dict[str, float] = defaultdict(float)
+    for b in historial:
+        r = b["rating"] if b["rating"] is not None else RATING_IMPLICITO
+        dias = (today - date.fromisoformat(b["fecha_lectura"])).days
+        recencia = math.exp(-dias / RECENCIA_HALFLIFE_DIAS)
+        peso = r * recencia
+        score_autor[b["autor"]] += peso
+        score_genero[b["genero"]] += peso
+
+    autor_fav = max(score_autor, key=score_autor.get) if score_autor else None
+    genero_fav = max(score_genero, key=score_genero.get) if score_genero else None
+    return autor_fav, genero_fav
 
 
 def _generate_tier_gasto(libros_leidos_total: int, bib_config: dict, rng: np.random.Generator) -> str:
@@ -282,6 +367,15 @@ def generate(
     rng = np.random.default_rng(seed)
     bib_config = _load_biblioteca_config()
 
+    # Inventario verificado: indexamos libros por autor para construir historiales
+    # con concentración de gusto realista.
+    catalogo = _load_catalogo()
+    todos_los_libros = catalogo["libros"]
+    libros_por_autor: dict[str, list[dict]] = defaultdict(list)
+    for libro in todos_los_libros:
+        libros_por_autor[libro["autor"]].append(libro)
+    today = date.fromisoformat(catalogo["_meta"]["fecha_referencia"])
+
     filas = []
     for i in range(n):
         first_name = _generate_firstname(rng)
@@ -299,8 +393,14 @@ def generate(
         ultimo_acceso_dias = _generate_ultimo_acceso_dias(rng)
         lista_deseos_activa = _generate_lista_deseos(rng)
         resenas_escritas = _generate_resenas_escritas(rng)
-        autor_favorito = _generate_autor_favorito(bib_config, rng)
-        genero_favorito = _generate_genero_favorito(bib_config, rng)
+
+        # Historial de lectura desde el catálogo (cap = lo que trackeamos) y gusto
+        # DERIVADO de ese historial — autor/género ya no son aleatorios sino evidence-based.
+        n_hist = min(int(libros_leidos_total), HISTORIAL_MAX)
+        historial_libros = _generate_historial_libros(
+            n_hist, libros_por_autor, todos_los_libros, today, rng
+        )
+        autor_favorito, genero_favorito = _derivar_gustos(historial_libros, today)
 
         tier_gasto = _generate_tier_gasto(libros_leidos_total, bib_config, rng)
         ingresos_app_mes = _generate_ingresos_app_mes(frecuencia_apertura_app, bib_config, rng)
@@ -331,6 +431,7 @@ def generate(
             "ultimo_acceso_dias": int(ultimo_acceso_dias),
             "lista_deseos_activa": bool(lista_deseos_activa),
             "resenas_escritas": int(resenas_escritas),
+            "historial_libros": json.dumps(historial_libros, ensure_ascii=False),
             "autor_favorito": autor_favorito,
             "genero_favorito": genero_favorito,
             "tier_gasto": tier_gasto,
@@ -349,7 +450,7 @@ def generate(
         "postcode", "phone", "email", "cuit_dni", "payment_email",
         "libros_leidos_total", "libros_leidos_ultimos_3_meses", "rating_promedio_dado",
         "frecuencia_apertura_app", "ultimo_acceso_dias", "lista_deseos_activa",
-        "resenas_escritas", "autor_favorito", "genero_favorito",
+        "resenas_escritas", "historial_libros", "autor_favorito", "genero_favorito",
         "tier_gasto", "ingresos_app_mes", "edad",
         "decline_code", "attempt_number",
     ]
@@ -382,6 +483,14 @@ def _print_summary(df: pd.DataFrame) -> None:
           f"median: {df['ingresos_app_mes'].median():.1f}")
     print(f"  edad — mean: {df['edad'].mean():.1f}, "
           f"min: {df['edad'].min()}, max: {df['edad'].max()}")
+    hist_len = df["historial_libros"].apply(lambda s: len(json.loads(s)))
+    sin_hist = (hist_len == 0).mean()
+    print(f"  historial_libros — mean: {hist_len.mean():.1f} libros/usuario, "
+          f"cold-start (sin historial): {sin_hist:.3f}")
+    print(f"  autor_favorito nulo (cold-start): {df['autor_favorito'].isna().mean():.3f}")
+    print(f"  Top 3 autores derivados:")
+    for autor, pct in df["autor_favorito"].value_counts(normalize=True).head(3).items():
+        print(f"    {autor}: {pct:.3f}")
 
 
 if __name__ == "__main__":

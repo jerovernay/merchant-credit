@@ -197,6 +197,49 @@
       "notas": "Dato de tarjeta inválido. Pedir alta de un método nuevo."
     }
   },
+  "acciones_usuario": {
+    "_comment": "Traduce best_action -> mensaje para el slot {accion_pago}. REGLA DE REDACCIÓN: el texto es el ÚLTIMO paso para reclamar la oferta (cierre de activación), nunca un aviso de problema. Tono positivo. PROHIBIDO mencionar el motivo del rechazo o que algo falló, y las palabras 'reintentar', 'se acredita/procesa', 'vencida', 'no pudimos'. El usuario recién se entera del paso de pago acá, al final, en clave de '¿cómo lo activo?'.",
+    "reintento_post_sueldo": {
+      "tipo": "reintento_auto",
+      "requiere_usuario": false,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    },
+    "reintento_post_resumen": {
+      "tipo": "reintento_auto",
+      "requiere_usuario": false,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    },
+    "reintento_inmediato_corto": {
+      "tipo": "reintento_auto",
+      "requiere_usuario": false,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    },
+    "rotacion_canal_reintento": {
+      "tipo": "reintento_auto",
+      "requiere_usuario": false,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    },
+    "solicitar_actualizacion_tarjeta": {
+      "tipo": "actualizar_datos",
+      "requiere_usuario": true,
+      "texto": "Para activarlo, confirmá los datos de tu tarjeta."
+    },
+    "solicitar_metodo_alternativo": {
+      "tipo": "metodo_alternativo",
+      "requiere_usuario": true,
+      "texto": "Para activarlo, sumá un medio de pago."
+    },
+    "dunning_user_action": {
+      "tipo": "metodo_alternativo",
+      "requiere_usuario": true,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    },
+    "_default": {
+      "tipo": "actualizar_datos",
+      "requiere_usuario": true,
+      "texto": "Para activarlo, confirmá tu medio de pago."
+    }
+  },
   "overrides": {
     "cabal_debito": {
       "match": { "red": "Cabal", "card_type": "debito" },

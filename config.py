@@ -82,6 +82,22 @@ GEO_TIERS_PATH = DATA_DIR / "geo_tiers.json"
 KMEANS_N_CLUSTERS = 5  # configurable cluster count for clustering.py
 KMEANS_BIBLIOTECA_PATH = MODELS_DIR / "kmeans_biblioteca.pkl"
 KMEANS_SCALER_PATH = MODELS_DIR / "kmeans_scaler.pkl"
+CLUSTERS_PATH = DATA_DIR / "clusters.json"
+
+# --- Incentivos y economía de ofertas ---
+# El LLM elige el incentivo; estas constantes definen el COSTO real (el modelo
+# nunca inventa números). La economía se calcula en offer_generator.py.
+INCENTIVOS_PATH = DATA_DIR / "incentivos.json"
+CATALOGO_PATH = DATA_DIR / "catalogo.json"   # inventario verificado: libros + eventos (anti-alucinación)
+# Modelo OpenAI para componer las ofertas (offer_generator). gpt-4o = redacción más
+# fina que gpt-4o-mini sin saltar al costo de los modelos de razonamiento. El demo usa
+# el cache curado, así que esto solo aplica al regenerar (offer_generator.py --force).
+OPENAI_MODEL_OFERTAS = "gpt-4o"
+ARPU_POR_TIER_ARS = {"Low": 4500, "Medium": 7000, "High": 12000}  # precio sub. mensual por tier
+MESES_RETENCION = 6                  # horizonte de LTV para evaluar un incentivo
+PRECIO_LIBRO_PROMEDIO_ARS = 6000     # base para incentivos de descuento sobre un libro
+MARGEN_INCENTIVO_MAX = 0.30          # el costo del incentivo no puede superar este % del LTV recuperado
+RECOVERY_RATE_BASE = 0.40            # tasa de recuperación esperada (alineada con ROI_DEFAULTS)
 
 # --- Macro económico (snapshot — actualizar periódicamente) ---
 MACRO_SNAPSHOT = {

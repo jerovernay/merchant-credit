@@ -1,0 +1,53 @@
+{
+  "_comment": "Inventario verificado de la biblioteca. Es la ÚNICA fuente de hechos para ofertas concretas: el LLM nunca inventa un título, autor, evento, fecha o precio — solo puede redactar items que salen de acá y que pasaron el filtro en código. 'libros' alimenta ofertas de descuento/novedad por autor; 'eventos' alimenta ofertas de charla/firma/feria (filtradas por fecha futura y ciudad). Mantener fresco: los eventos son perecederos (ver crawler).",
+  "_meta": {
+    "moneda": "ARS",
+    "fecha_referencia": "2026-06-06",
+    "version": "1.0"
+  },
+  "libros": [
+    {"id": "b_borges_ficciones", "titulo": "Ficciones", "autor": "Jorge Luis Borges", "genero": "Ficción", "precio_ars": 14000, "fecha_lanzamiento": "1944-01-01", "es_novedad": false},
+    {"id": "b_borges_aleph", "titulo": "El Aleph", "autor": "Jorge Luis Borges", "genero": "Ficción", "precio_ars": 14500, "fecha_lanzamiento": "1949-01-01", "es_novedad": false},
+    {"id": "b_borges_hacedor", "titulo": "El hacedor", "autor": "Jorge Luis Borges", "genero": "Poesía", "precio_ars": 12000, "fecha_lanzamiento": "1960-01-01", "es_novedad": false},
+    {"id": "b_borges_brodie", "titulo": "El informe de Brodie", "autor": "Jorge Luis Borges", "genero": "Ficción", "precio_ars": 13000, "fecha_lanzamiento": "1970-01-01", "es_novedad": false},
+    {"id": "b_borges_infamia", "titulo": "Historia universal de la infamia", "autor": "Jorge Luis Borges", "genero": "Ficción", "precio_ars": 12500, "fecha_lanzamiento": "1935-01-01", "es_novedad": false},
+
+    {"id": "b_cortazar_rayuela", "titulo": "Rayuela", "autor": "Julio Cortázar", "genero": "Ficción", "precio_ars": 18000, "fecha_lanzamiento": "1963-01-01", "es_novedad": false},
+    {"id": "b_cortazar_bestiario", "titulo": "Bestiario", "autor": "Julio Cortázar", "genero": "Misterio", "precio_ars": 13500, "fecha_lanzamiento": "1951-01-01", "es_novedad": false},
+    {"id": "b_cortazar_final", "titulo": "Final del juego", "autor": "Julio Cortázar", "genero": "Ficción", "precio_ars": 13000, "fecha_lanzamiento": "1956-01-01", "es_novedad": false},
+    {"id": "b_cortazar_armas", "titulo": "Las armas secretas", "autor": "Julio Cortázar", "genero": "Misterio", "precio_ars": 13000, "fecha_lanzamiento": "1959-01-01", "es_novedad": false},
+    {"id": "b_cortazar_cronopios", "titulo": "Historias de cronopios y de famas", "autor": "Julio Cortázar", "genero": "Ficción", "precio_ars": 14000, "fecha_lanzamiento": "1962-01-01", "es_novedad": false},
+
+    {"id": "b_pineiro_viudas", "titulo": "Las viudas de los jueves", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 16000, "fecha_lanzamiento": "2005-01-01", "es_novedad": false},
+    {"id": "b_pineiro_tuya", "titulo": "Tuya", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 15000, "fecha_lanzamiento": "2005-01-01", "es_novedad": false},
+    {"id": "b_pineiro_betibu", "titulo": "Betibú", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 16500, "fecha_lanzamiento": "2011-01-01", "es_novedad": false},
+    {"id": "b_pineiro_grietas", "titulo": "Las grietas de Jara", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 16000, "fecha_lanzamiento": "2009-01-01", "es_novedad": false},
+    {"id": "b_pineiro_catedrales", "titulo": "Catedrales", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 19000, "fecha_lanzamiento": "2020-01-01", "es_novedad": false},
+    {"id": "b_pineiro_guarida", "titulo": "La guarida (nuevo)", "autor": "Claudia Piñeiro", "genero": "Misterio", "precio_ars": 22000, "fecha_lanzamiento": "2026-05-15", "es_novedad": true},
+
+    {"id": "b_conti_sudeste", "titulo": "Sudeste", "autor": "Haroldo Conti", "genero": "Ficción", "precio_ars": 14000, "fecha_lanzamiento": "1962-01-01", "es_novedad": false},
+    {"id": "b_conti_mascaro", "titulo": "Mascaró, el cazador americano", "autor": "Haroldo Conti", "genero": "Historia", "precio_ars": 15000, "fecha_lanzamiento": "1975-01-01", "es_novedad": false},
+    {"id": "b_conti_envida", "titulo": "En vida", "autor": "Haroldo Conti", "genero": "Ficción", "precio_ars": 13500, "fecha_lanzamiento": "1971-01-01", "es_novedad": false},
+    {"id": "b_conti_jaula", "titulo": "Alrededor de la jaula", "autor": "Haroldo Conti", "genero": "Ficción", "precio_ars": 13000, "fecha_lanzamiento": "1966-01-01", "es_novedad": false},
+
+    {"id": "b_magnus_chino", "titulo": "Un chino en bicicleta", "autor": "Ariel Magnus", "genero": "Ficción", "precio_ars": 15000, "fecha_lanzamiento": "2007-01-01", "es_novedad": false},
+    {"id": "b_magnus_piezas", "titulo": "El que mueve las piezas", "autor": "Ariel Magnus", "genero": "Misterio", "precio_ars": 17000, "fecha_lanzamiento": "2017-01-01", "es_novedad": false},
+    {"id": "b_magnus_abuela", "titulo": "La abuela", "autor": "Ariel Magnus", "genero": "Ficción", "precio_ars": 14000, "fecha_lanzamiento": "2006-01-01", "es_novedad": false},
+    {"id": "b_magnus_cartas", "titulo": "Cartas a mi vecina de arriba", "autor": "Ariel Magnus", "genero": "Ficción", "precio_ars": 16000, "fecha_lanzamiento": "2026-04-20", "es_novedad": true},
+
+    {"id": "b_silver_marycoin", "titulo": "Mary Coin", "autor": "Marisa Silver", "genero": "Romance", "precio_ars": 17000, "fecha_lanzamiento": "2013-01-01", "es_novedad": false},
+    {"id": "b_silver_little", "titulo": "Little Nothing", "autor": "Marisa Silver", "genero": "Ficción", "precio_ars": 16000, "fecha_lanzamiento": "2016-01-01", "es_novedad": false},
+    {"id": "b_silver_god", "titulo": "The God of War", "autor": "Marisa Silver", "genero": "Romance", "precio_ars": 15500, "fecha_lanzamiento": "2008-01-01", "es_novedad": false},
+    {"id": "b_silver_babe", "titulo": "Babe in Paradise", "autor": "Marisa Silver", "genero": "Ficción", "precio_ars": 15000, "fecha_lanzamiento": "2001-01-01", "es_novedad": false}
+  ],
+  "eventos": [
+    {"id": "ev_pineiro_caba_charla", "tipo": "charla", "autor": "Claudia Piñeiro", "titulo": "Charla abierta: el policial argentino hoy", "ciudad": "CABA", "fecha": "2026-07-12", "precio_entrada_ars": 0},
+    {"id": "ev_pineiro_rosario_firma", "tipo": "firma", "autor": "Claudia Piñeiro", "titulo": "Firma de ejemplares de La guarida", "ciudad": "Rosario", "fecha": "2026-08-03", "precio_entrada_ars": 0},
+    {"id": "ev_cortazar_caba_homenaje", "tipo": "charla", "autor": "Julio Cortázar", "titulo": "Homenaje y lectura de Rayuela", "ciudad": "CABA", "fecha": "2026-06-28", "precio_entrada_ars": 2500},
+    {"id": "ev_borges_caba_recorrido", "tipo": "charla", "autor": "Jorge Luis Borges", "titulo": "Recorrido literario por la Biblioteca Nacional", "ciudad": "CABA", "fecha": "2026-09-10", "precio_entrada_ars": 3500},
+    {"id": "ev_magnus_cordoba_feria", "tipo": "feria", "autor": "Ariel Magnus", "titulo": "Feria del Libro de Córdoba: charla con el autor", "ciudad": "Córdoba", "fecha": "2026-07-25", "precio_entrada_ars": 1500},
+    {"id": "ev_conti_caba_proyeccion", "tipo": "charla", "autor": "Haroldo Conti", "titulo": "Proyección y conversatorio sobre Sudeste", "ciudad": "CABA", "fecha": "2026-08-20", "precio_entrada_ars": 2000},
+    {"id": "ev_pineiro_caba_pasada", "tipo": "charla", "autor": "Claudia Piñeiro", "titulo": "Presentación de Catedrales (edición aniversario)", "ciudad": "CABA", "fecha": "2026-03-15", "precio_entrada_ars": 0},
+    {"id": "ev_cortazar_laplata_pasada", "tipo": "firma", "autor": "Julio Cortázar", "titulo": "Mesa redonda: cuento fantástico rioplatense", "ciudad": "La Plata", "fecha": "2026-05-02", "precio_entrada_ars": 1000}
+  ]
+}

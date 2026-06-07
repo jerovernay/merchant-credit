@@ -1,0 +1,68 @@
+{
+  "_comment": "Catálogo de incentivos de recuperación. El LLM elige UN incentivo de acá; el código le adjunta los números reales (nunca los inventa el modelo). tipo_costo define cómo se calcula el costo por usuario recuperado: 'marginal' = ~0 (contenido digital ya existente), 'fijo' = costo_estimado_ars tal cual, 'porcentual_libro' = PRECIO_LIBRO_PROMEDIO_ARS * descuento_pct, 'arpu' = un mes de suscripción regalado (ARPU del cluster).",
+  "incentivos": {
+    "acceso_anticipado": {
+      "nombre": "Acceso anticipado a lanzamiento",
+      "descripcion": "Leer el próximo gran lanzamiento o título de catálogo antes que nadie.",
+      "tipo_costo": "marginal",
+      "costo_estimado_ars": 0,
+      "valor_percibido": "alto",
+      "digital": true,
+      "tono_afin": ["entusiasta", "cercano"]
+    },
+    "pack_genero_curado": {
+      "nombre": "Pack curado por género",
+      "descripcion": "Una selección de títulos del género favorito, armada por el equipo editorial.",
+      "tipo_costo": "marginal",
+      "costo_estimado_ars": 0,
+      "valor_percibido": "medio",
+      "digital": true,
+      "tono_afin": ["empatico", "cercano"]
+    },
+    "club_lectura_autor": {
+      "nombre": "Club de lectura del autor",
+      "descripcion": "Acceso a un club de lectura con foro moderado en torno a un autor o género.",
+      "tipo_costo": "marginal",
+      "costo_estimado_ars": 0,
+      "valor_percibido": "medio",
+      "digital": true,
+      "tono_afin": ["cercano", "urgente_suave"]
+    },
+    "descuento_libro_autor": {
+      "nombre": "Descuento en libro del autor favorito",
+      "descripcion": "Un porcentaje de descuento sobre un título del autor que más lee el usuario.",
+      "tipo_costo": "porcentual_libro",
+      "descuento_pct": 0.20,
+      "valor_percibido": "alto",
+      "digital": false,
+      "tono_afin": ["entusiasta", "cercano"]
+    },
+    "libro_regalo": {
+      "nombre": "Libro de regalo del autor favorito",
+      "descripcion": "Un título completo de regalo (NO un descuento) del autor que más lee el usuario. Reservar para segmentos que de verdad leen: el libro se valora y se consume.",
+      "tipo_costo": "porcentual_libro",
+      "descuento_pct": 1.0,
+      "valor_percibido": "alto",
+      "digital": false,
+      "tono_afin": ["entusiasta", "cercano", "empatico"]
+    },
+    "entrada_evento": {
+      "nombre": "Entrada a feria o evento literario",
+      "descripcion": "Una entrada a una feria del libro, charla de autor o evento literario.",
+      "tipo_costo": "fijo",
+      "costo_estimado_ars": 3500,
+      "valor_percibido": "alto",
+      "digital": false,
+      "tono_afin": ["entusiasta", "urgente_suave"]
+    },
+    "mes_gratis": {
+      "nombre": "Un mes de suscripción gratis",
+      "descripcion": "Un mes sin cargo al reactivar el medio de pago. El incentivo más caro: reservar para alto LTV.",
+      "tipo_costo": "arpu",
+      "valor_percibido": "alto",
+      "digital": true,
+      "tono_afin": ["empatico"]
+    }
+  },
+  "incentivo_fallback": "acceso_anticipado"
+}

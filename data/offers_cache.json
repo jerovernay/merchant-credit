@@ -1,0 +1,122 @@
+{
+  "lector_voraz": {
+    "cluster_id": "lector_voraz",
+    "cluster_nombre": "Lector Voraz",
+    "tipo_gancho": "autor",
+    "gancho": "Regalo/beneficio para Lector Voraz",
+    "incentivo_id": "libro_regalo",
+    "incentivo_ajustado": false,
+    "mensaje_template": "Solo para vos, {nombre}: te regalamos {oferta_personal}. {accion_pago}",
+    "clausula_autor": "",
+    "justificacion": "Lee mucho y valora novedades: un libro de regalo de su autor se consume y reengancha.",
+    "economia": {
+      "incentivo_id": "libro_regalo",
+      "incentivo_nombre": "Libro de regalo del autor favorito",
+      "valor_percibido": "alto",
+      "arpu_ars": 6438.0,
+      "ltv_recuperado_ars": 38628.0,
+      "costo_incentivo_ars": 6000.0,
+      "margen_por_recuperado_ars": 32628.0,
+      "ratio_costo_ltv": 0.155,
+      "dentro_guardrail": true
+    },
+    "model": "curado",
+    "generated_at": "2026-06-07"
+  },
+  "lector_fiel": {
+    "cluster_id": "lector_fiel",
+    "cluster_nombre": "Lector Fiel",
+    "tipo_gancho": "autor",
+    "gancho": "Regalo/beneficio para Lector Fiel",
+    "incentivo_id": "libro_regalo",
+    "incentivo_ajustado": false,
+    "mensaje_template": "No te lo pierdas, {nombre}{clausula_autor}: te regalamos {oferta_personal}. {accion_pago}",
+    "clausula_autor": " — para vos, que seguís a {autor_favorito}",
+    "justificacion": "Alta lealtad a su autor: regalarle un título de ese autor maximiza el valor percibido.",
+    "economia": {
+      "incentivo_id": "libro_regalo",
+      "incentivo_nombre": "Libro de regalo del autor favorito",
+      "valor_percibido": "alto",
+      "arpu_ars": 6976.0,
+      "ltv_recuperado_ars": 41856.0,
+      "costo_incentivo_ars": 6000.0,
+      "margen_por_recuperado_ars": 35856.0,
+      "ratio_costo_ltv": 0.143,
+      "dentro_guardrail": true
+    },
+    "model": "curado",
+    "generated_at": "2026-06-07"
+  },
+  "inactivo_reciente": {
+    "cluster_id": "inactivo_reciente",
+    "cluster_nombre": "Inactivo Reciente",
+    "tipo_gancho": "autor",
+    "gancho": "Regalo/beneficio para Inactivo Reciente",
+    "incentivo_id": "libro_regalo",
+    "incentivo_ajustado": false,
+    "mensaje_template": "Tenemos algo especial para vos, {nombre}: te reservamos un regalo, {oferta_personal}. {accion_pago}",
+    "clausula_autor": "",
+    "justificacion": "Necesita una razón concreta para volver: el regalo es el mejor gancho de recuperación.",
+    "economia": {
+      "incentivo_id": "libro_regalo",
+      "incentivo_nombre": "Libro de regalo del autor favorito",
+      "valor_percibido": "alto",
+      "arpu_ars": 6213.0,
+      "ltv_recuperado_ars": 37278.0,
+      "costo_incentivo_ars": 6000.0,
+      "margen_por_recuperado_ars": 31278.0,
+      "ratio_costo_ltv": 0.161,
+      "dentro_guardrail": true
+    },
+    "model": "curado",
+    "generated_at": "2026-06-07"
+  },
+  "lector_casual": {
+    "cluster_id": "lector_casual",
+    "cluster_nombre": "Lector Casual",
+    "tipo_gancho": "autor",
+    "gancho": "Regalo/beneficio para Lector Casual",
+    "incentivo_id": "club_lectura_autor",
+    "incentivo_ajustado": false,
+    "mensaje_template": "Pensado para vos, {nombre}: te sumamos {oferta_personal} para tus próximas lecturas. {accion_pago}",
+    "clausula_autor": "",
+    "justificacion": "Lee poco: un incentivo digital marginal (club) evita regalar un libro que no leería.",
+    "economia": {
+      "incentivo_id": "club_lectura_autor",
+      "incentivo_nombre": "Club de lectura del autor",
+      "valor_percibido": "medio",
+      "arpu_ars": 6083.0,
+      "ltv_recuperado_ars": 36498.0,
+      "costo_incentivo_ars": 0.0,
+      "margen_por_recuperado_ars": 36498.0,
+      "ratio_costo_ltv": 0.0,
+      "dentro_guardrail": true
+    },
+    "model": "curado",
+    "generated_at": "2026-06-07"
+  },
+  "coleccionista": {
+    "cluster_id": "coleccionista",
+    "cluster_nombre": "Coleccionista",
+    "tipo_gancho": "autor",
+    "gancho": "Regalo/beneficio para Coleccionista",
+    "incentivo_id": "acceso_anticipado",
+    "incentivo_ajustado": false,
+    "mensaje_template": "No te lo pierdas, {nombre}: sumá a tu colección {oferta_personal}. {accion_pago}",
+    "clausula_autor": "",
+    "justificacion": "Valora el acceso al catálogo más que el consumo: acceso anticipado a su colección.",
+    "economia": {
+      "incentivo_id": "acceso_anticipado",
+      "incentivo_nombre": "Acceso anticipado a lanzamiento",
+      "valor_percibido": "alto",
+      "arpu_ars": 5539.0,
+      "ltv_recuperado_ars": 33234.0,
+      "costo_incentivo_ars": 0.0,
+      "margen_por_recuperado_ars": 33234.0,
+      "ratio_costo_ltv": 0.0,
+      "dentro_guardrail": true
+    },
+    "model": "curado",
+    "generated_at": "2026-06-07"
+  }
+}
