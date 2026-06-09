@@ -26,7 +26,7 @@ from typing import Any
 
 import config
 from data.salary_calendar import proxima_ventana_cobro
-import model as ml
+from pipeline import model as ml
 
 
 # ---------------------------------------------------------------------------

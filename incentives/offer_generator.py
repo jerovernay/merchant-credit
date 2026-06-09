@@ -29,8 +29,8 @@ from pathlib import Path
 from typing import Any
 
 import config
-from offer_matcher import recomendar_oferta_personal
-from recovery_actions import resolver_accion
+from incentives.offer_matcher import recomendar_oferta_personal
+from pipeline.recovery_actions import resolver_accion
 
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 

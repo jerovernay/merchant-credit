@@ -137,21 +137,23 @@ set RETENELO_LLM_API_KEY=tu_api_key   # Windows
 
 ## Uso
 
-```bash
-# Correr el dashboard (demo principal)
-streamlit run app.py
+Los módulos viven en paquetes (`pipeline/`, `incentives/`, `tools/`, `sales/`),
+así que se corren con `python -m` desde la raíz del proyecto:
 
+```bash
 # Regenerar el dataset sintético
-python generator.py
+python -m tools.generator
 
 # Entrenar el modelo de clustering
-python clustering.py --train
+python -m pipeline.clustering --train
 
 # Regenerar las ofertas por cluster (requiere API key)
-python offer_generator.py
+python -m incentives.offer_generator
 ```
 
-El pitch deck está en `pitch.html` (abrir en el navegador).
+El pitch deck está en `docs/pitch.html` (abrir en el navegador).
+El dashboard Streamlit del hackathon quedó archivado en `archive/app.py`
+(ya no es parte del producto).
 
 ---
 
