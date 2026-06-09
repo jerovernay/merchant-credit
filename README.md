@@ -165,6 +165,6 @@ El dashboard Streamlit del hackathon quedó archivado en `archive/app.py`
 ---
 
 ## Equipo
-- **Jero** — pipeline core + interacción con el usuario final.
-- **Gasti** — investigación de métodos de recuperación más allá del mensaje directo.
-- **Nico** — dashboard B2B (lo que ve la empresa cliente).
+- **Jero** — Ciencia de Datos UBA
+- **Gasti** — Ciencia de Datos UBA
+- **Nico** — Ciencias de la Computacion UBA
